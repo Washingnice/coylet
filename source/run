@@ -20,7 +20,7 @@ umask 755
 
 # Función para verificar e instalar programas
 server_ok() {
-    if [ "$container" != "true" ]; then
+    if [ ""$container"" != "true" ]; then
         update_repos() {
             if command -v apt-get &>/dev/null; then
                 apt-get update >/dev/null 2>&1
@@ -164,7 +164,7 @@ server_check() {
 
 autostart_run() {
     # instalando coylet sistema de arrnque automatico
-    if [ $container != "true" ]; then
+    if [ "$container" != "true" ]; then
         PROGRAM_NAME="coylet"
         if [ ! $PROGRAM_DIRECTORY]; then
             PROGRAM_DIRECTORY="$directorio_destino/source/"
@@ -317,7 +317,7 @@ regs_st() {
         archivo_running="$directorio_destino/source/running"
 
         # Registrar el estado en los archivos correspondientes
-        case "$estado" in
+        case $estado in
         "run")
             touch "$archivo_running" # Crear archivo "running" (Run)
             ;;
@@ -380,7 +380,7 @@ obt_st() {
 c_run() {
     estado=$(obt_st)
     # Verificar si el estado no es ni 1 ni 3
-    if [ "$estado" -eq 1 ] || [ "$estado" -eq 3 ]; then
+    if [ $estado -eq 1 ] || [ $estado -eq 3 ]; then
         return 0
     else
         exit 0
@@ -390,7 +390,7 @@ c_run() {
 
 c_install() {
      estado=$(obt_st)
-    if [ "$estado" != "2" ]; then
+    if [ $estado -eq "2" ]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
@@ -401,7 +401,7 @@ c_start() {
         echo "No hay permisos de red para poder manejar con iptables"
         exit 1
     fi
-    if [ ! $container == "true" ]; then
+    if [ ! "$container" == "true" ]; then
         if ! [ "$(obt_st)" -eq 0 ]; then
             echo "No se puede iniciar el programa, por que las condiciones no estan dadas"
             exit 1
