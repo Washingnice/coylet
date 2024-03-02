@@ -20,7 +20,7 @@ umask 755
 
 # Función para verificar e instalar programas
 server_ok() {
-    if [ ""$container"" != "true" ]; then
+    if ! [[ "$container" == "true" ]]; then
         update_repos() {
             if command -v apt-get &>/dev/null; then
                 apt-get update >/dev/null 2>&1
@@ -164,9 +164,9 @@ server_check() {
 
 autostart_run() {
     # instalando coylet sistema de arrnque automatico
-    if [ "$container" != "true" ]; then
+    if ! [[ "$container" == "true" ]]; then
         PROGRAM_NAME="coylet"
-        if [ ! $PROGRAM_DIRECTORY]; then
+        if ! [[ ($PROGRAM_DIRECTORY) ]]; then
             PROGRAM_DIRECTORY="$directorio_destino/source/"
         fi
         cd ${PROGRAM_DIRECTORY}
@@ -364,7 +364,6 @@ obt_st() {
             estado_running="Run"
         fi
 
-
         # Devolver un código de estado numérico basado en los criterios mencionados
         case "$estado_check$estado_running" in
         "checknostop") return 0 ;;   # Éxito: Estado "check" presente y "run" no presente
@@ -380,7 +379,7 @@ obt_st() {
 c_run() {
     estado=$(obt_st)
     # Verificar si el estado no es ni 1 ni 3
-    if [ $estado -eq 1 ] || [ $estado -eq 3 ]; then
+    if [[ ($estado -eq 1) || ($estado -eq 3) ]]; then
         return 0
     else
         exit 0
@@ -389,8 +388,8 @@ c_run() {
 }
 
 c_install() {
-     estado=$(obt_st)
-    if [ $estado -eq "2" ]; then
+
+    if [[ "$(obt_st)" -eq 2 ]]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
@@ -399,11 +398,13 @@ c_install() {
 c_start() {
     if ! iptables -t nat -S &>/dev/null; then
         echo "No hay permisos de red para poder manejar con iptables"
+        sleep 5
         exit 1
     fi
-    if [ ! "$container" == "true" ]; then
-        if ! [ "$(obt_st)" -eq 0 ]; then
+    if ! [[ ("$container" == "true") ]]; then
+        if ! [[ "$(obt_st)" -eq 0 ]]; then
             echo "No se puede iniciar el programa, por que las condiciones no estan dadas"
+            sleep 5
             exit 1
         fi
     else
@@ -412,8 +413,9 @@ c_start() {
 }
 
 c_stop() {
-    if [ ! "$(obt_st)" -eq 1 ]; then
+    if ! [[ ("$(obt_st)" -eq 1) ]]; then
         echo "no se puede detener el programa si no esta instalado o corriendo"
+        sleep 5
         exit 1
     fi
 }
