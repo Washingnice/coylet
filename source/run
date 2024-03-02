@@ -6,7 +6,7 @@ if [[ $EUID -ne 0 ]]; then
     unset bots
     exit 1 # Salir con un código de error
 fi
-directorio_destino="${DIRECTORIO_DESTINO:-/etc/coylet}"
+directorio_destino="${directorio_destino:-/etc/coylet}"
 repositorio_git="https://github.com/Washingnice/coylet.git"
 # Lista de servidores importantes
 
