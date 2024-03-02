@@ -227,7 +227,6 @@ update_coylet() {
     server_ok
     regs_st nocheck
 
-
     # Definir extensiones a excluir
     extensiones_excluidas=("conf" "txt")
 
@@ -245,7 +244,11 @@ update_coylet() {
         "source/enb/coylet.service"
         "source/enb/coylet"
     )
-
+    # Verificar si el directorio de destino existe
+    if [ ! -d "$directorio_destino" ]; then
+        # Crear el directorio si no existe
+        mkdir -p "$directorio_destino"
+    fi
     # Clonar el repositorio si el directorio de destino no existe
     if [ ! -d "$directorio_destino" ]; then
         git clone "$repositorio_git" "$directorio_destino"
