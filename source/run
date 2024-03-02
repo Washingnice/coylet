@@ -95,7 +95,7 @@ server_ok() {
         # Instalar el paquete adecuado para ping dependiendo del sistema
         if ! command -v ping &>/dev/null; then
             check_and_install "ping" "inetutils-ping" # Para sistemas basados en Debian/Ubuntu
-            check_and_install "ping" "inetutils"    # Para sistemas basados en Red Hat/CentOS
+            check_and_install "ping" "inetutils"      # Para sistemas basados en Red Hat/CentOS
         fi
 
         if ! command -v ip &>/dev/null; then
@@ -378,8 +378,8 @@ obt_st() {
 c_run() {
     estado=$(obt_st)
     # Verificar si el estado no es ni 1 ni 3
-     if [ "$estado" -eq 1 ] || [ "$estado" -eq 3 ]; then
-     return 0
+    if [ "$estado" -eq 1 ] || [ "$estado" -eq 3 ]; then
+        return 0
     else
         exit 0
     fi
@@ -387,7 +387,7 @@ c_run() {
 }
 
 c_install() {
-    if ! [ "$(obt_st)" -eq 2 ]; then
+    if [! "$(obt_st)" -eq 2 ]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
@@ -409,7 +409,7 @@ c_start() {
 }
 
 c_stop() {
-    if ! [ "$(obt_st)" -eq 1 ]; then
+    if  [! "$(obt_st)" -eq 1 ]; then
         echo "no se puede detener el programa si no esta instalado o corriendo"
         exit 1
     fi
