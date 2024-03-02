@@ -20,7 +20,7 @@ umask 755
 
 # Función para verificar e instalar programas
 server_ok() {
-    if [ $container != "true" ]; then
+    if [ "$container" != "true" ]; then
         update_repos() {
             if command -v apt-get &>/dev/null; then
                 apt-get update >/dev/null 2>&1
@@ -390,7 +390,7 @@ c_run() {
 
 c_install() {
      estado=$(obt_st)
-    if [ ! "$estado" -eq 2 ]; then
+    if [ "$estado" != "2" ]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
