@@ -14,102 +14,103 @@ important_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222" "64.6.64.6")
 important_domains=("google.com" "cloudflare.com" "opendns.com" "quad9.net" "verisign.com")
 
 ddos=true
-bots=false
+bots=true
 
 umask 755
 
 # Función para verificar e instalar programas
 server_ok() {
-    update_repos() {
-        if command -v apt-get &>/dev/null; then
-            apt-get update >/dev/null 2>&1
-        elif command -v dnf &>/dev/null; then
-            dnf check-update >/dev/null 2>&1
-        elif command -v yum &>/dev/null; then
-            yum check-update >/dev/null 2>&1
-        elif command -v zypper &>/dev/null; then
-            zypper refresh >/dev/null 2>&1
-        elif command -v pacman &>/dev/null; then
-            pacman -Sy >/dev/null 2>&1
-        elif command -v emerge &>/dev/null; then
-            emerge --sync >/dev/null 2>&1
-        elif command -v apk &>/dev/null; then
-            apk update >/dev/null 2>&1
-        fi
-    }
-
-    check_and_install() {
-        local program=$1
-        local programtest=$1
-        local programut=$2
-
-        if ! command -v "$program" &>/dev/null && [ -n "$programut" ]; then
-            program=$programut
-            echo "$program no está instalado. Intentando instalar..."
-
+    if [! $container == "true" ]; then
+        update_repos() {
             if command -v apt-get &>/dev/null; then
-                apt-get install -y $program >/dev/null 2>&1
+                apt-get update >/dev/null 2>&1
             elif command -v dnf &>/dev/null; then
-                dnf install -y $program >/dev/null 2>&1
+                dnf check-update >/dev/null 2>&1
             elif command -v yum &>/dev/null; then
-                yum install -y $program >/dev/null 2>&1
+                yum check-update >/dev/null 2>&1
             elif command -v zypper &>/dev/null; then
-                zypper install -y $program >/dev/null 2>&1
+                zypper refresh >/dev/null 2>&1
             elif command -v pacman &>/dev/null; then
-                pacman -S --noconfirm $program >/dev/null 2>&1
+                pacman -Sy >/dev/null 2>&1
             elif command -v emerge &>/dev/null; then
-                emerge -a $program >/dev/null 2>&1
+                emerge --sync >/dev/null 2>&1
             elif command -v apk &>/dev/null; then
-                apk add $program >/dev/null 2>&1
-            else
-                echo "No se pudo determinar el sistema de gestión de paquetes. Por favor, instala $program manualmente. coylet no inicia"
-                regs_st stop
-                regs_st nocheck
-                exit 1
+                apk update >/dev/null 2>&1
             fi
-            if ! command -v $programtest &>/dev/null; then
-                echo "El programa $programtest no se pudo comprobar su ejecucion coylet no inicia y se cierran todas las ejecuciones en el sistema"
-                regs_st stop
-                regs_st nocheck
-                exit 1
+        }
+
+        check_and_install() {
+            local program=$1
+            local programtest=$1
+            local programut=$2
+
+            if ! command -v "$program" &>/dev/null && [ -n "$programut" ]; then
+                program=$programut
+                echo "$program no está instalado. Intentando instalar..."
+
+                if command -v apt-get &>/dev/null; then
+                    apt-get install -y $program >/dev/null 2>&1
+                elif command -v dnf &>/dev/null; then
+                    dnf install -y $program >/dev/null 2>&1
+                elif command -v yum &>/dev/null; then
+                    yum install -y $program >/dev/null 2>&1
+                elif command -v zypper &>/dev/null; then
+                    zypper install -y $program >/dev/null 2>&1
+                elif command -v pacman &>/dev/null; then
+                    pacman -S --noconfirm $program >/dev/null 2>&1
+                elif command -v emerge &>/dev/null; then
+                    emerge -a $program >/dev/null 2>&1
+                elif command -v apk &>/dev/null; then
+                    apk add $program >/dev/null 2>&1
+                else
+                    echo "No se pudo determinar el sistema de gestión de paquetes. Por favor, instala $program manualmente. coylet no inicia"
+                    regs_st stop
+                    regs_st nocheck
+                    exit 1
+                fi
+                if ! command -v $programtest &>/dev/null; then
+                    echo "El programa $programtest no se pudo comprobar su ejecucion coylet no inicia y se cierran todas las ejecuciones en el sistema"
+                    regs_st stop
+                    regs_st nocheck
+                    exit 1
+                fi
             fi
+        }
+        update_repos
+        # Verificar e instalar programas
+        check_and_install "sha1sum"
+        check_and_install "tcpdump"
+        check_and_install "awk"
+        check_and_install "grep"
+        check_and_install "cut"
+        check_and_install "sort"
+        check_and_install "wget"
+        check_and_install "git"
+        check_and_install "nano"
+        check_and_install "uniq"
+        check_and_install "iptables"
+        check_and_install "tr"
+        check_and_install "stat" "coreutils"
+
+        # Instalar el paquete adecuado para ping dependiendo del sistema
+        if ! command -v ping &>/dev/null; then
+            check_and_install "ping" "iputils-ping" # Para sistemas basados en Debian/Ubuntu
+            check_and_install "ping" "inetutils"    # Para sistemas basados en Red Hat/CentOS
         fi
-    }
-    update_repos
-    # Verificar e instalar programas
-    check_and_install "sha1sum"
-    check_and_install "tcpdump"
-    check_and_install "awk"
-    check_and_install "grep"
-    check_and_install "cut"
-    check_and_install "sort"
-    check_and_install "wget"
-    check_and_install "git"
-    check_and_install "nano"
-    check_and_install "uniq"
-    check_and_install "iptables"
-    check_and_install "tr"
-    check_and_install "stat" "coreutils"
 
-    # Instalar el paquete adecuado para ping dependiendo del sistema
-    if ! command -v ping &>/dev/null; then
-        check_and_install "ping" "iputils-ping" # Para sistemas basados en Debian/Ubuntu
-        check_and_install "ping" "inetutils"    # Para sistemas basados en Red Hat/CentOS
-    fi
+        if ! command -v ip &>/dev/null; then
+            check_and_install "ip" "iproute"  # Para sistemas basados en Debian/Ubuntu
+            check_and_install "ip" "iproute2" # Para sistemas basados en Red Hat/CentOS
+        fi
 
-    if ! command -v ip &>/dev/null; then
-        check_and_install "ip" "iproute"  # Para sistemas basados en Debian/Ubuntu
-        check_and_install "ip" "iproute2" # Para sistemas basados en Red Hat/CentOS
+        # Instalar el paquete adecuado para host dependiendo del sistema
+        if ! command -v host &>/dev/null; then
+            check_and_install "host" "dnsutils"   # Para sistemas basados en Debian/Ubuntu
+            check_and_install "host" "bind-utils" # Para sistemas basados en Red Hat/CentOS
+        fi
+        echo "Check OK"
     fi
-
-    # Instalar el paquete adecuado para host dependiendo del sistema
-    if ! command -v host &>/dev/null; then
-        check_and_install "host" "dnsutils"   # Para sistemas basados en Debian/Ubuntu
-        check_and_install "host" "bind-utils" # Para sistemas basados en Red Hat/CentOS
-    fi
-    echo "Check OK"
     server_check
-
     return 0
 }
 
@@ -163,60 +164,62 @@ server_check() {
 
 autostart_run() {
     # instalando coylet sistema de arrnque automatico
-    PROGRAM_NAME="coylet"
-    if [! $PROGRAM_DIRECTORY]; then
-        PROGRAM_DIRECTORY="$directorio_destino/source/"
-    fi
-    cd ${PROGRAM_DIRECTORY}
-
-    # Función para iniciar el programa en sistemas con systemd
-    start_systemd() {
-        if [! -f "/etc/systemd/system/${PROGRAM_NAME}.service" ]; then
-            cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME}.service /etc/systemd/system/
-            chmod +x /etc/systemd/system/${PROGRAM_NAME}.service
+    if [! $container == "true" ]; then
+        PROGRAM_NAME="coylet"
+        if [! $PROGRAM_DIRECTORY]; then
+            PROGRAM_DIRECTORY="$directorio_destino/source/"
         fi
-        systemctl start "${PROGRAM_NAME}.service"
-    }
+        cd ${PROGRAM_DIRECTORY}
 
-    # Función para habilitar el inicio automático en sistemas con systemd
-    enable_autostart_systemd() {
-        systemctl enable "${PROGRAM_NAME}.service"
-    }
-
-    # Función para iniciar el programa en sistemas con init.d
-    start_initd() {
-        "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" start
-    }
-
-    # Función para habilitar el inicio automático en sistemas con init.d
-    enable_autostart_initd() {
-        if [! -f "/etc/init.d/${PROGRAM_NAME}" ]; then
-            if command -v update-rc.d &>/dev/null; then
-                echo "Habilitando el inicio automático con init.d"
-                cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME} /etc/init.d/
-                chmod +x /etc/init.d/${PROGRAM_NAME}
-                update-rc.d ${PROGRAM_NAME} defaults 234
-            else
-                echo "no se puede determinar forma de iniciar de forma manual"
+        # Función para iniciar el programa en sistemas con systemd
+        start_systemd() {
+            if [! -f "/etc/systemd/system/${PROGRAM_NAME}.service" ]; then
+                cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME}.service /etc/systemd/system/
+                chmod +x /etc/systemd/system/${PROGRAM_NAME}.service
             fi
-        fi
-        # Por ejemplo, podrías crear enlaces simbólicos en los directorios adecuados.
-    }
+            systemctl start "${PROGRAM_NAME}.service"
+        }
 
-    # Verifica si systemd está presente en el sistema
-    if command -v systemctl >/dev/null 2>&1; then
-        start_systemd
-        enable_autostart_systemd
-    elif [ -x "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" ]; then
-        start_initd
-        enable_autostart_initd
-    else
-        echo "No se pudo determinar el sistema de inicio o el programa no está en el directorio esperado."
-        sleep 5
-        return 1
+        # Función para habilitar el inicio automático en sistemas con systemd
+        enable_autostart_systemd() {
+            systemctl enable "${PROGRAM_NAME}.service"
+        }
+
+        # Función para iniciar el programa en sistemas con init.d
+        start_initd() {
+            "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" start
+        }
+
+        # Función para habilitar el inicio automático en sistemas con init.d
+        enable_autostart_initd() {
+            if [! -f "/etc/init.d/${PROGRAM_NAME}" ]; then
+                if command -v update-rc.d &>/dev/null; then
+                    echo "Habilitando el inicio automático con init.d"
+                    cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME} /etc/init.d/
+                    chmod +x /etc/init.d/${PROGRAM_NAME}
+                    update-rc.d ${PROGRAM_NAME} defaults 234
+                else
+                    echo "no se puede determinar forma de iniciar de forma manual"
+                fi
+            fi
+            # Por ejemplo, podrías crear enlaces simbólicos en los directorios adecuados.
+        }
+
+        # Verifica si systemd está presente en el sistema
+        if command -v systemctl >/dev/null 2>&1; then
+            start_systemd
+            enable_autostart_systemd
+        elif [ -x "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" ]; then
+            start_initd
+            enable_autostart_initd
+        else
+            echo "No se pudo determinar el sistema de inicio o el programa no está en el directorio esperado."
+            sleep 5
+            return 1
+        fi
+        echo "Se instalo correctamente! y se inicia de forma automatica. Ya esta en ejecucion en el sistema"
+        sleep 10
     fi
-    echo "Se instalo correctamente! y se inicia de forma automatica. Ya esta en ejecucion en el sistema"
-    sleep 10
     return 0
 }
 
@@ -388,16 +391,24 @@ c_install() {
 }
 
 c_start() {
-    if ! [ "$(obt_st)" -eq 0 ]; then
-        echo "No se puede iniciar el programa, por que las condiciones no estan dadas"
-        exit 0
+    if ! iptables -t nat -S &>/dev/null; then
+        echo "No hay permisos de red para poder manejar con iptables"
+        exit 1
+    fi
+    if [! $container == "true" ]; then
+        if ! [ "$(obt_st)" -eq 0 ]; then
+            echo "No se puede iniciar el programa, por que las condiciones no estan dadas"
+            exit 1
+        fi
+    else
+        update_coylet
     fi
 }
 
 c_stop() {
     if ! [ "$(obt_st)" -eq 1 ]; then
         echo "no se puede detener el programa si no esta instalado o corriendo"
-        exit 0
+        exit 1
     fi
 }
 
@@ -424,9 +435,8 @@ restart() {
     echo "Reiniciando el coylet..."
     sleep 10s
     c_start
-    regs_st run
     sleep 1s
-    coylet
+    start
 }
 
 update() {
