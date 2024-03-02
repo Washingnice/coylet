@@ -20,7 +20,7 @@ umask 755
 
 # Función para verificar e instalar programas
 server_ok() {
-    if [! $container == "true" ]; then
+    if [ $container != "true" ]; then
         update_repos() {
             if command -v apt-get &>/dev/null; then
                 apt-get update >/dev/null 2>&1
@@ -164,16 +164,16 @@ server_check() {
 
 autostart_run() {
     # instalando coylet sistema de arrnque automatico
-    if [! $container == "true" ]; then
+    if [ $container != "true" ]; then
         PROGRAM_NAME="coylet"
-        if [! $PROGRAM_DIRECTORY]; then
+        if [ ! $PROGRAM_DIRECTORY]; then
             PROGRAM_DIRECTORY="$directorio_destino/source/"
         fi
         cd ${PROGRAM_DIRECTORY}
 
         # Función para iniciar el programa en sistemas con systemd
         start_systemd() {
-            if [! -f "/etc/systemd/system/${PROGRAM_NAME}.service" ]; then
+            if [ ! -f "/etc/systemd/system/${PROGRAM_NAME}.service" ]; then
                 cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME}.service /etc/systemd/system/
                 chmod +x /etc/systemd/system/${PROGRAM_NAME}.service
             fi
@@ -192,7 +192,7 @@ autostart_run() {
 
         # Función para habilitar el inicio automático en sistemas con init.d
         enable_autostart_initd() {
-            if [! -f "/etc/init.d/${PROGRAM_NAME}" ]; then
+            if [ ! -f "/etc/init.d/${PROGRAM_NAME}" ]; then
                 if command -v update-rc.d &>/dev/null; then
                     echo "Habilitando el inicio automático con init.d"
                     cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME} /etc/init.d/
@@ -387,7 +387,7 @@ c_run() {
 }
 
 c_install() {
-    if [! "$(obt_st)" -eq 2 ]; then
+    if [ ! "$(obt_st)" -eq 2 ]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
@@ -398,7 +398,7 @@ c_start() {
         echo "No hay permisos de red para poder manejar con iptables"
         exit 1
     fi
-    if [! $container == "true" ]; then
+    if [ ! $container == "true" ]; then
         if ! [ "$(obt_st)" -eq 0 ]; then
             echo "No se puede iniciar el programa, por que las condiciones no estan dadas"
             exit 1
@@ -409,7 +409,7 @@ c_start() {
 }
 
 c_stop() {
-    if  [! "$(obt_st)" -eq 1 ]; then
+    if [ ! "$(obt_st)" -eq 1 ]; then
         echo "no se puede detener el programa si no esta instalado o corriendo"
         exit 1
     fi
