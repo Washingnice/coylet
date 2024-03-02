@@ -7,7 +7,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1 # Salir con un código de error
 fi
 directorio_destino="${directorio_destino:-/etc/coylet}"
-repositorio_git="https://github.com/Washingnice/coylet.git"
+repositorio_git="https://raw.githubusercontent.com/Washingnice/coylet/master"
 # Lista de servidores importantes
 
 important_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222" "64.6.64.6")
@@ -244,18 +244,6 @@ update_coylet() {
         "source/enb/coylet.service"
         "source/enb/coylet"
     )
-    # Verificar si el directorio de destino existe
-    if [ ! -d "$directorio_destino" ]; then
-        # Crear el directorio si no existe
-        mkdir -p "$directorio_destino"
-    fi
-    # Clonar el repositorio si el directorio de destino no existe
-    if [ ! -d "$directorio_destino" ]; then
-        git clone "$repositorio_git" "$directorio_destino"
-    else
-        # Actualizar el repositorio si ya existe
-        git -C "$directorio_destino" pull origin master
-    fi
 
     for archivo in "${archivos[@]}"; do
         # Extraer la extensión del archivo
@@ -265,43 +253,48 @@ update_coylet() {
         if [[ ! " ${extensiones_excluidas[@]} " =~ " $extension " ]]; then
             ruta_archivo="$directorio_destino/$archivo"
 
+            # Verificar si el archivo existe localmente
             if [ -f "$ruta_archivo" ]; then
                 echo "Verificando actualizaciones para el archivo $archivo..."
 
-                # Verificar si hay cambios en el archivo en el repositorio remoto
-                cambios=$(git -C "$directorio_destino" diff origin/master -- "$archivo")
+                # Obtener el hash SHA-1 del archivo local
+                sha_local=$(sha1sum "$ruta_archivo" | awk '{print $1}')
 
-                if [ -n "$cambios" ]; then
+                # Obtener el hash SHA-1 del archivo en GitHub
+                sha_github=$(wget -qO- "$repositorio_git/$archivo" | sha1sum | awk '{print $1}')
+
+                # Comparar los hashes
+                if [ "$sha_local" != "$sha_github" ]; then
                     echo "Hay actualizaciones para el archivo $archivo. Actualizando..."
-                    git -C "$directorio_destino" checkout -- "$archivo"
-
+                    # Descargar el archivo desde GitHub si hay actualizaciones
+                    wget -O "$ruta_archivo" "$repositorio_git/$archivo"
                     # Verificar y ajustar propietario y permisos después de actualizar el archivo
                     chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
                     chown root:root "$ruta_archivo"
                     echo "El archivo $ruta_archivo ha sido actualizado"
-
+                else
+                    echo "El archivo $archivo ya está actualizado."
                 fi
             else
-                echo "El archivo $archivo no existe. Descargándolo desde el repositorio de Git."
+                echo "El archivo $archivo no existe localmente. Descargándolo desde el repositorio de GitHub."
 
-                # Descargar el archivo desde el repositorio remoto
-                if git -C "$directorio_destino" checkout -- "$archivo"; then
-                    chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
-                    chown root:root "$ruta_archivo"
-                    echo "El archivo $ruta_archivo ha sido descargado!"
-                else
-                    echo "No se pudo descargar el archivo $archivo desde el repositorio de Git."
-                    regs_st nocheck
-                    exit 2
-                fi
+                # Descargar el archivo desde GitHub
+                wget -O "$ruta_archivo" "$repositorio_git/$archivo"
+
+                # Verificar y ajustar propietario y permisos después de descargar el archivo
+                chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
+                chown root:root "$ruta_archivo"
+                echo "El archivo $ruta_archivo ha sido descargado!"
             fi
+        else
+            echo "La extensión $extension está excluida para el archivo $archivo. Omitiendo descarga."
         fi
     done
+
     regs_st check
     echo "Sistema de archivos ok!"
     cleep 4
     clear
-
 }
 
 # Función para registrar el estado del programa
