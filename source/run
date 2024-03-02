@@ -7,7 +7,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1 # Salir con un código de error
 fi
 directorio_destino="${directorio_destino:-/etc/coylet}"
-repositorio_git="https://github.com/Washingnice/coylet.git"
+repositorio_git="https://github.com/Washingnice/coylet/tree/master"
 # Lista de servidores importantes
 
 important_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222" "64.6.64.6")
@@ -227,6 +227,7 @@ update_coylet() {
     server_ok
     regs_st nocheck
 
+
     # Definir extensiones a excluir
     extensiones_excluidas=("conf" "txt")
 
@@ -239,7 +240,7 @@ update_coylet() {
         "listanegra.txt"
         "leeme.txt"
         "firewall/iptables.conf"
-        "sourece/run"
+        "source/run"
         "source/init"
         "source/enb/coylet.service"
         "source/enb/coylet"
