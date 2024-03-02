@@ -364,8 +364,6 @@ obt_st() {
             estado_running="Run"
         fi
 
-        echo "Estado 'check': $estado_check"
-        echo "Estado 'running': $estado_running"
 
         # Devolver un código de estado numérico basado en los criterios mencionados
         case "$estado_check$estado_running" in
@@ -391,7 +389,8 @@ c_run() {
 }
 
 c_install() {
-    if [ ! "$(obt_st)" -eq 2 ]; then
+     estado=$(obt_st)
+    if [ ! "$estado" -eq 2 ]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
