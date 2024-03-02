@@ -1,0 +1,7 @@
+Coylet es un programa que se diseño para solulucionar tres grandes problemas en el mundo de los servidores.
+
+1. Reglas de firewall, control de puertos, NAT y MASQUERADE. De forma programatica en dos archivos que almacena la configuracion de forma legible.
+2. Mitigacion DDos por contador de SOCKET remotos gracias a tcpdump.
+3. Carga automatica de la lista mundial BOOTNET. Mas de 50 mil ips en segundos.
+
+Se diseño de tal manera que no tenga impacto en CPU. Como tampoco se hacen escrituras en disco.

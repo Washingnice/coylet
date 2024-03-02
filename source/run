@@ -1,0 +1,469 @@
+#!/bin/bash
+
+if [[ $EUID -ne 0 ]]; then
+    echo "Solo el usuario root puede ejecutar este programa."
+    unset ddos
+    unset bots
+    exit 1 # Salir con un código de error
+fi
+directorio_destino="${DIRECTORIO_DESTINO:-/etc/coylet}"
+repositorio_git="https://tu-repositorio-git.com/tu/proyecto.git"
+# Lista de servidores importantes
+
+important_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222" "64.6.64.6")
+important_domains=("google.com" "cloudflare.com" "opendns.com" "quad9.net" "verisign.com")
+
+ddos=true
+bots=false
+
+umask 755
+
+# Función para verificar e instalar programas
+server_ok() {
+    update_repos() {
+        if command -v apt-get &>/dev/null; then
+            apt-get update >/dev/null 2>&1
+        elif command -v dnf &>/dev/null; then
+            dnf check-update >/dev/null 2>&1
+        elif command -v yum &>/dev/null; then
+            yum check-update >/dev/null 2>&1
+        elif command -v zypper &>/dev/null; then
+            zypper refresh >/dev/null 2>&1
+        elif command -v pacman &>/dev/null; then
+            pacman -Sy >/dev/null 2>&1
+        elif command -v emerge &>/dev/null; then
+            emerge --sync >/dev/null 2>&1
+        elif command -v apk &>/dev/null; then
+            apk update >/dev/null 2>&1
+        fi
+    }
+
+    check_and_install() {
+        local program=$1
+        local programtest=$1
+        local programut=$2
+
+        if ! command -v "$program" &>/dev/null && [ -n "$programut" ]; then
+            program=$programut
+            echo "$program no está instalado. Intentando instalar..."
+
+            if command -v apt-get &>/dev/null; then
+                apt-get install -y $program >/dev/null 2>&1
+            elif command -v dnf &>/dev/null; then
+                dnf install -y $program >/dev/null 2>&1
+            elif command -v yum &>/dev/null; then
+                yum install -y $program >/dev/null 2>&1
+            elif command -v zypper &>/dev/null; then
+                zypper install -y $program >/dev/null 2>&1
+            elif command -v pacman &>/dev/null; then
+                pacman -S --noconfirm $program >/dev/null 2>&1
+            elif command -v emerge &>/dev/null; then
+                emerge -a $program >/dev/null 2>&1
+            elif command -v apk &>/dev/null; then
+                apk add $program >/dev/null 2>&1
+            else
+                echo "No se pudo determinar el sistema de gestión de paquetes. Por favor, instala $program manualmente. coylet no inicia"
+                regs_st stop
+                regs_st nocheck
+                exit 1
+            fi
+            if ! command -v $programtest &>/dev/null; then
+                echo "El programa $programtest no se pudo comprobar su ejecucion coylet no inicia y se cierran todas las ejecuciones en el sistema"
+                regs_st stop
+                regs_st nocheck
+                exit 1
+            fi
+        fi
+    }
+    update_repos
+    # Verificar e instalar programas
+    check_and_install "sha1sum"
+    check_and_install "tcpdump"
+    check_and_install "awk"
+    check_and_install "grep"
+    check_and_install "cut"
+    check_and_install "sort"
+    check_and_install "wget"
+    check_and_install "git"
+    check_and_install "nano"
+    check_and_install "uniq"
+    check_and_install "iptables"
+    check_and_install "tr"
+    check_and_install "stat" "coreutils"
+
+    # Instalar el paquete adecuado para ping dependiendo del sistema
+    if ! command -v ping &>/dev/null; then
+        check_and_install "ping" "iputils-ping" # Para sistemas basados en Debian/Ubuntu
+        check_and_install "ping" "inetutils"    # Para sistemas basados en Red Hat/CentOS
+    fi
+
+    if ! command -v ip &>/dev/null; then
+        check_and_install "ip" "iproute"  # Para sistemas basados en Debian/Ubuntu
+        check_and_install "ip" "iproute2" # Para sistemas basados en Red Hat/CentOS
+    fi
+
+    # Instalar el paquete adecuado para host dependiendo del sistema
+    if ! command -v host &>/dev/null; then
+        check_and_install "host" "dnsutils"   # Para sistemas basados en Debian/Ubuntu
+        check_and_install "host" "bind-utils" # Para sistemas basados en Red Hat/CentOS
+    fi
+    echo "Check OK"
+    server_check
+
+    return 0
+}
+
+server_check() {
+    # Función para verificar conectividad a Internet por ping
+    check_internet_ping() {
+        for server in "${important_servers[@]}"; do
+            if ping -c 1 $server &>/dev/null; then
+                echo "Conexión a $server por ping exitosa."
+            else
+                echo "No se puede establecer conexión a $server por ping. Verifica tu conexión. coylet intentara iniciar en 2 minutos"
+                sleep 2m
+                return 1
+            fi
+        done
+    }
+
+    # Función para verificar resolución de dominios DNS
+    check_dns_resolution() {
+        for domain in "${important_domains[@]}"; do
+            if host $domain &>/dev/null; then
+                echo "Resolución de dominio DNS $domain exitosa."
+            else
+                echo "No se puede resolver el dominio DNS $domain. Verifica tu conexión y configuración DNS. coylet intentara iniciar en 2 minutos"
+                sleep 2m
+                return 1
+            fi
+        done
+    }
+
+    # Verificar resolución de dominios DNS
+    # Bucle principal que se reiniciará en caso de fallo
+    while true; do
+        check_dns_resolution
+        if [ $? -eq 0 ]; then
+            break # Salir del bucle si la resolución de DNS fue exitosa para todos los dominios
+        fi
+        echo "Reiniciando el script..."
+    done
+
+    # Verificar conectividad a Internet por ping
+    while true; do
+        check_internet_ping
+        if [ $? -eq 0 ]; then
+            break # Salir del bucle si la resolución de DNS fue exitosa para todos los dominios
+        fi
+        echo "Reiniciando el script..."
+    done
+    return 0
+}
+
+autostart_run() {
+    # instalando coylet sistema de arrnque automatico
+    PROGRAM_NAME="coylet"
+    if [! $PROGRAM_DIRECTORY]; then
+        PROGRAM_DIRECTORY="$directorio_destino/source/"
+    fi
+    cd ${PROGRAM_DIRECTORY}
+
+    # Función para iniciar el programa en sistemas con systemd
+    start_systemd() {
+        if [! -f "/etc/systemd/system/${PROGRAM_NAME}.service" ]; then
+            cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME}.service /etc/systemd/system/
+            chmod +x /etc/systemd/system/${PROGRAM_NAME}.service
+        fi
+        systemctl start "${PROGRAM_NAME}.service"
+    }
+
+    # Función para habilitar el inicio automático en sistemas con systemd
+    enable_autostart_systemd() {
+        systemctl enable "${PROGRAM_NAME}.service"
+    }
+
+    # Función para iniciar el programa en sistemas con init.d
+    start_initd() {
+        "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" start
+    }
+
+    # Función para habilitar el inicio automático en sistemas con init.d
+    enable_autostart_initd() {
+        if [! -f "/etc/init.d/${PROGRAM_NAME}" ]; then
+            if command -v update-rc.d &>/dev/null; then
+                echo "Habilitando el inicio automático con init.d"
+                cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME} /etc/init.d/
+                chmod +x /etc/init.d/${PROGRAM_NAME}
+                update-rc.d ${PROGRAM_NAME} defaults 234
+            else
+                echo "no se puede determinar forma de iniciar de forma manual"
+            fi
+        fi
+        # Por ejemplo, podrías crear enlaces simbólicos en los directorios adecuados.
+    }
+
+    # Verifica si systemd está presente en el sistema
+    if command -v systemctl >/dev/null 2>&1; then
+        start_systemd
+        enable_autostart_systemd
+    elif [ -x "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" ]; then
+        start_initd
+        enable_autostart_initd
+    else
+        echo "No se pudo determinar el sistema de inicio o el programa no está en el directorio esperado."
+        sleep 5
+        return 1
+    fi
+    echo "Se instalo correctamente! y se inicia de forma automatica. Ya esta en ejecucion en el sistema"
+    sleep 10
+    return 0
+}
+
+update_coylet() {
+    server_ok
+    regs_st nocheck
+
+    # Definir extensiones a excluir
+    extensiones_excluidas=("conf" "txt")
+
+    archivos=(
+        "config.conf"
+        "dns.conf"
+        "tcp_p.conf"
+        "udp_p.conf"
+        "access.txt"
+        "listanegra.txt"
+        "leeme.txt"
+        "firewall/iptables.conf"
+        "sourece/run"
+        "source/init"
+        "source/enb/coylet.service"
+        "source/enb/coylet"
+    )
+
+    # Clonar el repositorio si el directorio de destino no existe
+    if [ ! -d "$directorio_destino" ]; then
+        git clone "$repositorio_git" "$directorio_destino"
+    else
+        # Actualizar el repositorio si ya existe
+        git -C "$directorio_destino" pull origin master
+    fi
+
+    for archivo in "${archivos[@]}"; do
+        # Extraer la extensión del archivo
+        extension="${archivo##*.}"
+
+        # Verificar si la extensión está excluida
+        if [[ ! " ${extensiones_excluidas[@]} " =~ " $extension " ]]; then
+            ruta_archivo="$directorio_destino/$archivo"
+
+            if [ -f "$ruta_archivo" ]; then
+                echo "Verificando actualizaciones para el archivo $archivo..."
+
+                # Verificar si hay cambios en el archivo en el repositorio remoto
+                cambios=$(git -C "$directorio_destino" diff origin/master -- "$archivo")
+
+                if [ -n "$cambios" ]; then
+                    echo "Hay actualizaciones para el archivo $archivo. Actualizando..."
+                    git -C "$directorio_destino" checkout -- "$archivo"
+
+                    # Verificar y ajustar propietario y permisos después de actualizar el archivo
+                    chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
+                    chown root:root "$ruta_archivo"
+                    echo "El archivo $ruta_archivo ha sido actualizado"
+
+                fi
+            else
+                echo "El archivo $archivo no existe. Descargándolo desde el repositorio de Git."
+
+                # Descargar el archivo desde el repositorio remoto
+                if git -C "$directorio_destino" checkout -- "$archivo"; then
+                    chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
+                    chown root:root "$ruta_archivo"
+                    echo "El archivo $ruta_archivo ha sido descargado!"
+                else
+                    echo "No se pudo descargar el archivo $archivo desde el repositorio de Git."
+                    regs_st nocheck
+                    exit 2
+                fi
+            fi
+        fi
+    done
+    regs_st check
+    echo "Sistema de archivos ok!"
+    cleep 4
+    clear
+
+}
+
+# Función para registrar el estado del programa
+regs_st() {
+    estado="$1"
+
+    # Verificar si el directorio de destino existe
+    if [ -d "$directorio_destino/source/" ]; then
+        # Archivo que registra el estado "check"
+        archivo_check="$directorio_destino/source/check"
+
+        # Archivo que registra el estado "running"
+        archivo_running="$directorio_destino/source/running"
+
+        # Registrar el estado en los archivos correspondientes
+        case "$estado" in
+        "run")
+            touch "$archivo_running" # Crear archivo "running" (Run)
+            ;;
+        "stop")
+            rm -f "$archivo_running" # Eliminar archivo "running" (Run)
+            ;;
+        "check")
+            touch "$archivo_check" # Crear archivo "check"
+            ;;
+        "nocheck")
+            rm -f "$archivo_check" # Eliminar archivo "check"
+            ;;
+        *)
+            echo "Estado no reconocido: $estado"
+            return 1 # Error: Estado no reconocido
+            ;;
+        esac
+
+        return 0 # Operación exitosa
+    else
+        echo "El directorio de destino no existe: $directorio_destino/source/"
+        return 2 # Error: Directorio de destino no existe
+    fi
+}
+
+obt_st() {
+
+    # Verificar si el directorio de destino existe
+    if [ -d "$directorio_destino/source/" ]; then
+        # Archivo que registra el estado "check"
+        archivo_check="$directorio_destino/source/check"
+
+        # Archivo que registra el estado "running"
+        archivo_running="$directorio_destino/source/running"
+
+        # Verificar si los archivos existen
+        estado_check="nocheck"
+        if [ -f "$archivo_check" ]; then
+            estado_check="check"
+        fi
+
+        estado_running="nostop"
+        if [ -f "$archivo_running" ]; then
+            estado_running="Run"
+        fi
+
+        echo "Estado 'check': $estado_check"
+        echo "Estado 'running': $estado_running"
+
+        # Devolver un código de estado numérico basado en los criterios mencionados
+        case "$estado_check$estado_running" in
+        "checknostop") return 0 ;;   # Éxito: Estado "check" presente y "run" no presente
+        "checkRun") return 1 ;;      # No tan exitoso: Ambos estados presentes
+        "nochecknostop") return 2 ;; # Tercer peor estado: Ninguno de los dos estados presentes
+        "nocheckRun") return 3 ;;    # Estado adicional: "running" presente y "check" no presente
+        esac
+    else
+        return 5 # Error: Directorio de destino no existe
+    fi
+}
+
+c_run() {
+    estado=$(obt_st)
+    # Verificar si el estado no es ni 1 ni 3
+    if [ "$estado" -ne 1 ] && [ "$estado" -ne 3 ]; then
+        exit 0
+    fi
+}
+
+c_install() {
+    if ! [ "$(obt_st)" -eq 2 ]; then
+        echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
+        exit 0
+    fi
+}
+
+c_start() {
+    if ! [ "$(obt_st)" -eq 0 ]; then
+        echo "No se puede iniciar el programa, por que las condiciones no estan dadas"
+        exit 0
+    fi
+}
+
+c_stop() {
+    if ! [ "$(obt_st)" -eq 1 ]; then
+        echo "no se puede detener el programa si no esta instalado o corriendo"
+        exit 0
+    fi
+}
+
+# Funciones específicas para realizar acciones basadas en el estado
+start() {
+    c_start
+    echo "Iniciando el coylet..."
+    sleep 4
+    regs_st run
+    source $directorio_destino/source/init
+    coylet
+}
+
+stop() {
+    c_stop
+    echo "Deteniendo el coylet..."
+    regs_st stop
+    sleep 10
+}
+
+restart() {
+    c_run
+    regs_st stop
+    echo "Reiniciando el coylet..."
+    sleep 10s
+    c_start
+    regs_st run
+    sleep 1s
+    coylet
+}
+
+update() {
+    echo "Actualizando el coylet..."
+    update_coylet
+}
+
+check() {
+    echo "Verificando el coylet..."
+    server_ok
+}
+
+install() {
+    echo "Instalando....."
+    c_install
+    update_coylet
+    autostart_run
+}
+
+# Validar si se proporciona un argumento
+if [ -z "$1" ]; then
+    echo "Uso: $0 {start|stop|restart|update|check|reload}"
+    exit 1
+fi
+
+# Ejecutar la función correspondiente al argumento proporcionado
+case "$1" in
+start) start ;;
+stop) stop ;;
+restart) restart ;;
+update) update ;;
+check) check ;;
+install) install ;;
+*)
+    echo "Uso: $0 {start|stop|restart|update|check|reload}"
+    exit 1
+    ;;
+esac
+
+exit 0

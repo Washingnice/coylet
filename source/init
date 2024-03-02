@@ -1,0 +1,778 @@
+#!/bin/bash
+
+if [[ $EUID -ne 0 ]]; then
+    echo "Solo el usuario root puede ejecutar este programa."
+    unset ddos
+    unset bots
+    exit 1 # Salir con un código de error
+fi
+
+coylet() {
+    cd $directorio_destino/source
+    #var de enterno iniciales
+    pre_config
+    update_config
+
+    #ciclo trabajo principal
+    for ((O = 1; O <= 5; O)); do
+        check_config
+        parametric
+        sleep 0.2
+
+    done
+}
+
+directivexv3() {
+    data_config
+    for ((O = 1; O <= 5; O)); do
+        update_config bg
+        dataload
+        clearip
+        #autobacknet
+        #closenet
+        #liverador
+        sleep 0.3
+    done
+}
+
+#   condiciones para imprimir en consola datos
+printip_l() {
+    if [[ $forctt -ge 1 ]]; then
+        if [[ I -eq 0 ]]; then
+            # clear
+            # echo "Umbral CPI:" $concns "| num IPs-connectadas:" $num "| Num IPs-bloqueadas:" $ipblock "| Estado de red:" $redblock "|" `date`
+            echo "Umbral CPI:" $concns "| num IPs-connectadas:" ${#netip[*]} "| Num IPs-bloqueadas:" $ipblock "| Estado de red:" $redblock "|" $(date) >/tmp/coylet_tmp/impri.info
+            # echo "CPI:" ${netcns[I]} "IP:" ${netip[I]}
+            if [[ ${netcns[I]} -gt 1 ]]; then
+                echo "CPI:" ${netcns[I]} "IP:" ${netip[I]} >>/tmp/coylet_tmp/impri.info
+            fi
+        else
+            # echo "CPI:" ${netcns[I]} "IP:" ${netip[I]}
+            if [[ ${netcns[I]} -gt 1 ]]; then
+                echo "CPI:" ${netcns[I]} "IP:" ${netip[I]} >>/tmp/coylet_tmp/impri.info
+            fi
+        fi
+    fi
+}
+
+#   auto backup de red
+autobacknet() {
+    let backrst++
+    if [[ (($backrst -ge 450) && ("$redblockbol" == "FALSE") && ($cls -eq 600)) ]]; then
+        backrst=0
+        #///////////registro////red/////////////////
+        date >>$directorio_destino/log/registro/panorama-nrm.txt
+        ss -ntu >>$directorio_destino/log/registro/panorama-nrm.txt
+        netiptot=($(ss -ntu | awk '{print $6}' | grep -E "^[0-9]" | cut -d: -f1 | sort | sed '/^192.168.1.11/ d' | sed '/^127.0.0.1/ d' | sed '/^2800/ d' | sed '/^2801/ d' | uniq -c | awk '{print $2}'))
+        #///////////////////ciclo/////////////////////
+        for bfor in ${!netiptot[*]}; do
+            if [[ (("$dlzk" == "TRUE") && ($bfor -eq 0)) ]]; then
+                back1=()
+            fi
+            if [[ "$dlzk" == "TRUE" ]]; then
+                back1+=(${netiptot[bfor]})
+            fi
+            if [[ (("$dlzk" == "FALSE") && ($bfor -eq 0)) ]]; then
+                back2=()
+            fi
+            if [[ "$dlzk" == "FALSE" ]]; then
+                back2+=(${netiptot[bfor]})
+            fi
+        done
+        if [[ "$dlzk" == "TRUE" ]]; then
+            dlzk=FALSE
+        else
+            dlzk=TRUE
+        fi
+    fi
+}
+
+#   ///////////////////ciclo/////////////////////
+clearip() {
+    for I in ${!netcns[*]}; do
+        printip_l
+        #condicion de limitador conecciones ip
+        if [[ ${netcns[I]} -gt $concns ]]; then
+            #ciclo y condicion descarta ip ya agregada
+            whitelist netdrop ${netip[I]}
+            if [[ (("$wlist" == "FALSE") && ("$wlist")) ]]; then
+                #///////////////corte/////////////////////////
+                iptables -A netdrop -s ${netip[I]} -j DROP -w
+                iptables -A netdropo -d ${netip[I]} -j DROP -w
+                echo "iptables -D netdrop -s ${netip[I]} -j DROP -w" | at now + $conblt minute
+                echo "iptables -D netdropo -d ${netip[I]} -j DROP -w" | at now + $conblt minute
+                #Resgistro variables
+                for sout in ${cache[@]}; do echo $sout; done >>$directorio_destino/log/registro/panorama-blk.txt
+                #///////////entorno/////////////////////////
+                echo "BLOCK IP:" ${netip[I]} "CPI:" ${netcns[I]} "|Fecha y hora|" $(date) >>$directorio_destino/log/log.txt
+                let ipbcs++
+                let ipblock++
+                cls=0
+            fi
+        fi
+    done
+}
+
+#   ////////////////LIVERADOR//DE//BLOCK///////////////////
+liverador() {
+    if [[ (("$redblockbol" == "TRUE") && ($cls -eq 600)) ]]; then
+        let dsblock++
+    fi
+    if [[ (($dsblock -ge $dsblockrts) && ("$redblockbol" == "TRUE") && ($cls -eq 600)) ]]; then
+        dsblock=0
+        #////////estado////registro//////
+        redblockbol=FALSE
+        redblock="Red abierta"
+        echo "la red fue liberada" $(date) >>$directorio_destino/log/log.txt
+        #/////ELIMINA CADENA DE BLOQUEO//////
+        iptables -F netbackup
+        iptables -F netbackupo
+    fi
+}
+
+#   bloqueo de red
+closenet() {
+    if [[ ((($ipbcs -ge $conblc) || ($num -ge $conipst) || ($totsbs3 -ge $conips3)) && ("$redblockbol" == "FALSE")) ]]; then
+        #//////activacion////////
+        redblock="Bloqueo de red activo"
+        redblockbol=TRUE
+        if [[ "$dlzk" == "TRUE" ]]; then
+            witelistdata=($(cat $directorio_destino/access.txt | grep -v "#" && echo ${back1[*]}))
+        else
+            witelistdata=($(cat $directorio_destino/access.txt | grep -v "#" && echo ${back2[*]}))
+        fi
+        echo "*filter" >/tmp/coylet_tmp/netbackup.tmp
+        #//////////////ciclo//////////////
+        for Z in ${!witelistdata[*]}; do
+            #/////////INSERSION////////////INSERSION/////////INSERSION/////////////
+            echo "-A netbackup -s ${witelistdata[Z]} -j RETURN" >>/tmp/coylet_tmp/netbackup.tmp
+            echo "-A netbackupo -d ${witelistdata[Z]} -j RETURN" >>/tmp/coylet_tmp/netbackup.tmp
+        done
+        echo "-A netbackup -s 0.0.0.0/0 -j DROP" >>/tmp/coylet_tmp/netbackup.tmp
+        echo "-A netbackup -d 0.0.0.0/0 -j DROP" >>/tmp/coylet_tmp/netbackup.tmp
+        echo "COMMIT" >>/tmp/coylet_tmp/netbackup.tmp
+        echo "#fin fin" >>/tmp/coylet_tmp/netbackup.tmp
+        cat /tmp/coylet_tmp/netbackup.tmp | iptables-restore -n
+        rm -f /tmp/coylet_tmp/netbackup.tmp
+        #log registro/////
+        date >>$directorio_destino/log/registro/panorama-blk.txt
+        ss -ntu >>$directorio_destino/log/registro/panorama-blk.txt
+        echo "La red se cerro, por disparador de emergencia" $(date) >>$directorio_destino/log/log.txt
+        echo '$ipbcs = $conblc | $num = $conipst | $totsbs3 = $conips3' >>$directorio_destino/log/log.txt
+        echo "$ipbcs = $conblc | $num = $conipst | $totsbs3 = $conips3" >>$directorio_destino/log/log.txt
+        echo "#/////fin//////fin///////" >>$directorio_destino/log/log.txt
+    fi
+}
+
+#   datos de red ips filtradas para arreys
+dataload() {
+    unset netip
+    unset netcns
+    loopbackips32=($(ip a | grep "inet " | awk '{print $2}' | cut -d/ -f1))
+    dvsaddr=$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')
+    srcnothost=$(for I in ${loopbackips32[*]}; do echo "and not src host $I "; done)
+    sumvar=0
+    IFS=$'\n'
+    cache=($(tcpdump -i $dvsaddr -Nq -c 500 -n not icmp and not src 443 and not src 80 $srcnothost))
+    database=($(for L in ${cache[@]}; do echo $L; done | grep -v "IP6" | grep "IP" | awk '{print $3}' | sort | uniq | tr "." " " | awk '{print $1"."$2"."$3"."$4}'))
+
+    oldvar=
+    for M in ${database[@]}; do
+        if [[ (! $oldvar) ]]; then
+            oldvar=$M
+        fi
+        if [[ ($oldvar == $M) ]]; then
+            let sumvar++
+        else
+            netip+=($oldvar)
+            netcns+=($sumvar)
+            sumvar=1
+            oldvar=$M
+        fi
+    done
+    num=${#netip[*]}
+}
+
+pre_config() {
+    #runchecksts start
+    umask 755
+    IFS=$'\n'
+    if [[ ! -d /tmp/coylet_tmp/ ]]; then
+        mkdir /tmp/coylet_tmp
+    fi
+    if [[ "$ddos" == "true" ]]; then
+        directivexv3 &
+    fi
+    if [[ "$bots" == "true" ]]; then
+        botsprotect &
+    fi
+    date_configold=0
+    date_dnsold=0
+    dataid=a
+    datarst=0
+    date_port_udpold=0
+    date_port_tcpold=0
+    date_registradosold=0
+    date_blacklistold=0
+    sysctl -w net.ipv6.conf.all.disable_ipv6=1
+    sysctl -w net.ipv6.conf.default.disable_ipv6=1
+    sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+    ipsbs3=0
+    redblock="Red abierta"
+    backrst=100
+    dsblock=0
+    redblockbol=FALSE
+    dlzk=FALSE
+    ipblock=0
+    forctt=20
+    ipbcs=0
+    rstbcs=0
+    cls=0
+    iplist=0
+    dockerfire
+}
+
+#   ///DNS////HOST////
+dns_config() {
+    dns=($(cat $directorio_destino/dns.conf | grep -v "#" | awk '{print $1}'))
+    echo nameserver ${dns[0]} >/etc/resolv.conf
+    echo nameserver ${dns[1]} >>/etc/resolv.conf
+}
+
+reg_config() {
+    iplist_r=($(cat $directorio_destino/access.txt | awk '{print $1}' | grep -v "#"))
+    cls=200
+}
+
+botsprotect() {
+    while true; do
+        c_run
+        sleep 20
+        #ingreso databots temp
+        #ips de livel 1 base de datos
+        #variables de operaciones
+        wget https://reputation.alienvault.com/reputation.generic -O /tmp/coylet_tmp/lev1.dat >/dev/null 2>&1
+        wget https://iplists.firehol.org/files/firehol_level1.netset -O /tmp/coylet_tmp/lev2.dat >/dev/null 2>&1
+        lev1met=($(cat /tmp/coylet_tmp/lev1.dat | awk '{print $1}' | grep -v "#" | grep -v "192.168.0.0/16"))
+        lev2met=($(cat /tmp/coylet_tmp/lev2.dat | awk '{print $1}' | grep -v "#" | grep -v "192.168.0.0/16"))
+        count=0
+        acount=0
+        for srsip in ${lev1met[*]}; do
+            botsdat+=("-A netbotso -d $srsip -j DROP")
+            botsdat+=("-A netbots -s $srsip -j DROP")
+            #clear
+            let acount++
+            #echo "Cargando direciones ip alienvault_reputation:" $acount
+        done
+
+        #ciclo de ingreso
+        for srsip in ${lev2met[*]}; do
+            botsdat+=("-A netbotso -d $srsip -j DROP")
+            botsdat+=("-A netbots -s $srsip -j DROP")
+            #clear
+            let count++
+            #echo "Cargando direciones ip firehol_level1:" $count
+        done
+        #preparacion de carga y eliminacion de reglas antiguas
+
+        #carga de ips a iptable-restore
+        restoresiptables b
+        #eliminacion de temporales
+        rm -f /tmp/coylet_tmp/lev1.dat
+        rm -f /tmp/coylet_tmp/lev2.dat
+        let totbot=$acount+$count
+        echo $(date) "Se cargo satisfactoriamente la lista de alienvault_reputation y firehol_level1. el numero total es:" $acount y $count total: $totbot ips >>$directorio_destino/log/botreg.txt
+        break
+    done
+}
+
+dockerfire() {
+    echo "{" >/etc/docker/daemon.json
+    echo '"iptables": false' >>/etc/docker/daemon.json
+    echo "}" >>/etc/docker/daemon.json
+    cat $directorio_destino/firewall/iptables.conf | iptables-restore
+}
+
+restoresiptables() {
+    subfor() {
+        IFS=$'\n'
+        for I in ${inttmp[*]}; do
+            echo $I
+        done
+        for I in ${inttmp2[*]}; do
+            echo $I
+        done
+        return 0
+    }
+    IFS=$'\n'
+    local inttmp
+    local inttmp2
+
+    if [[ (("$1" == "n") || (("$1" == "b") && ("$botsdat"))) ]]; then
+        if [[ "$1" == "n" ]]; then
+
+            inttmp=("*nat")
+            for l in ${natport[*]}; do
+                inttmp+=("$l")
+            done
+            inttmp+=("COMMIT" "#comentarios")
+
+            inttmp2=("*filter")
+            for l in ${portrts[*]}; do
+                inttmp2+=("$l")
+            done
+            inttmp2+=("COMMIT" "#comentarios")
+
+            iptables -F coyl-user-input
+            iptables -t nat -F MINAT-PRE
+            iptables -t nat -F NOT-NAT
+            iptables -t nat -F MINAT-POST
+            iptables -F MINAT-USER
+            iptables -t nat -A NOT-NAT -j MINAT-PRE
+            subfor | iptables-restore -n
+        elif [[ "$1" == "b" ]]; then
+            inttmp=("*filter")
+            for I in ${botsdat[*]}; do
+                inttmp+=("$I")
+            done
+            inttmp+=("COMMIT" "#comentarios")
+            inttmp=("*filter" "${botsdat[*]}" "COMMIT" "#comentarios")
+            iptables -F netbots
+            iptables -F netbotso
+            subfor | iptables-restore -n
+            return 0
+        fi
+    else
+        return 1
+    fi
+    unset natport
+    unset portrts
+    unset botsdat
+    unset subfor
+}
+
+#   ///////CONFIG////////
+#   cargador de config/parametros
+data_config() {
+    config=($(cat $directorio_destino/config.conf | grep -v "#" | awk '{print $1}'))
+    concns=${config[0]}
+    conips3=${config[1]}
+    conipst=${config[2]}
+    conblc=${config[3]}
+    conblt=${config[4]}
+    conon=${config[5]}
+    srchost=${config[6]}
+    let dsblockrts="(($conon*60)*(5))"
+}
+
+#   restablece el contador y carga config 1 segundo
+check_config() {
+    if [ $forctt -ge 5 ]; then
+        forctt=0
+        update_config
+    else
+        let forctt++
+    fi
+}
+
+#   ciclo y condicion descarta ip ya agregada
+whitelist() {
+    IFS=$'\n'
+    if [[ ((! "$1") || (! "$2")) ]]; then
+        echo "Se debe ingresar nombre de cadena Y direccion ip que desa buscar"
+        return 2
+    fi
+    if [[ "$1" ]]; then
+        local iplist=($(iptables -S $1 | tr "/" " " | awk '{print $4}'))
+        for k in ${!iplist[*]}; do
+            if [[ ("${iplist[k]}" == "$2") ]]; then
+                wlist=TRUE
+                return 0
+            fi
+        done
+    fi
+    reg_config
+    for k in ${!iplist_r[*]}; do
+        if [[ ("${iplist_r[k]}" == "$2") ]]; then
+            wlist=TRUE
+            return 0
+        fi
+    done
+    wlist=FALSE
+    return 0
+}
+
+func_negra() {
+    iptables -F negra
+    iptables -F negrao
+    negra_arrey=($(cat $directorio_destino/listanegra.txt | awk '{print $1}' | grep -v "#"))
+    for negraf in ${!negra_arrey[*]}; do
+        iptables -A negra -s ${negra_arrey[$negraf]} -j DROP -w
+        iptables -A negrao -d ${negra_arrey[$negraf]} -j DROP -w
+    done
+}
+
+parametric() {
+    if [[ $cls -lt 550 ]]; then
+        let cls++
+    fi
+    #           numero de bloquos consecutivo permitido antes de disparar alerta/bloqueo de red
+    if [[ $ipbcs -ge 1 ]]; then
+        let rstbcs++
+    fi
+    if [[ $rstbcs -ge 5 ]]; then
+        ipbcs=0
+        rstbcs=0
+    fi
+    #           //////////contador ips3/////////////////////////////
+    if [[ $totsbs3 -ge 1 ]]; then
+        let rstsbs3++
+    fi
+    if [[ $rstsbs3 -ge 10 ]]; then
+        ipsbs3=$num
+        rstsbs3=0
+    fi
+    if [[ $ipsbs3 -gt $num ]]; then
+        ipsbs3=$num
+    fi
+    let totsbs3=$num-ipsbs3
+}
+restw() {
+    local I
+    loopbackips32=($(ip a | grep "inet " | awk '{print $2}' | cut -d/ -f1))
+    loopbackips=($(ip a | grep "inet " | awk '{print $2}'))
+    dvsaddr=$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')
+    dvsaddrs=($(ip a | grep ": " | awk '{print $2}' | grep -v lo | grep -v @ | cut -d: -f1 | uniq | grep -v $dvsaddr))
+    for I in ${loopbackips[*]}; do
+        iptables -A loopback -s $I -j ACCEPT -W
+    done
+
+    return 0
+}
+
+portmaster() {
+    unset portrts
+    unset natport
+    local dvsaddr=$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')
+    local startport
+    local prefijo
+    local portdivis
+    local sourceip
+    local destinip
+    local port1d1
+    local port1d2
+    local port2d1
+    local smultipori
+    local destinipi
+    local pdestinipi
+    local sourceipi
+    local spori
+    local snat
+    local pnat
+    local multipori
+    local destinipi_N
+    local dopulos
+    local port_list
+    local port_type
+    local int_i
+    local int_o
+
+    outputdata() {
+        if [[ (("$prefijo" == "P") && ("$fortestvar" == ";")) ]]; then
+            if [[ ((("$port1d1" && "$port1d2") && (
+                $port1d2 -gt $port1d1)) && (($port1d1 -gt 1) && ($port1d1 -le 65535) && (
+                $port1d2 -gt 1) && ($port1d2 -le 65535))) ]]; then
+                multipori=" --match multiport --dports $port1d1:$port1d2"
+            fi
+            if [[ (("$port1d1") && ($port1d1 -gt 1) && ($port1d1 -le 65535) && (! $port1d2)) ]]; then
+                spori="-m $port_type --dport $port1d1"
+            fi
+            if [[ "$sourceip" ]]; then
+                sourceipi="-s $sourceip"
+            fi
+            if [[ "$destinip" ]]; then
+                destinipi="-d $destinip"
+            fi
+            if [[ (($destinipi) || ($sourceipi) || ($spori) || ($multipori)) ]]; then
+                portrts+=("-A coyl-user-input -p $port_type $sourceipi $destinipi $spori $multipor -j ACCEPT")
+
+            fi
+            rstvarford
+        fi
+        if [[ (("$prefijo" == "N") && ("$fortestvar" == ";")) ]]; then
+            if [[ ((("$port1d1" && "$port1d2") && (
+                $port1d2 -gt $port1d1)) && (($port1d1 -gt 1) && ($port1d1 -le 65535) && (
+                $port1d2 -gt 1) && ($port1d2 -le 65535))) ]]; then
+                smultipori="--match multiport --dports $port1d1:$port1d2"
+                multipori="--match multiport --dports $port1d1:$port1d2"
+            fi
+            if [[ (("$port2d1") && ($port2d1 -gt 1) && ($port2d1 -le 65535) && (! "$port1d2")) ]]; then
+                pnat=":$port2d1"
+            fi
+            if [[ (("$port1d1") && ($port1d1 -gt 1) && ($port1d1 -le 65535) && (! "$port1d2")) ]]; then
+                snat="-m $port_type --dport $port1d1"
+                if [[ "$pnat" ]]; then
+                    spori="-m $port_type --dport $port2d1"
+                else
+                    spori="-m $port_type --dport $port1d1"
+                fi
+            fi
+            if [[ "$sourceip" ]]; then
+                sourceipi="-s $sourceip"
+            fi
+            if [[ "$destinip" ]]; then
+                destinipi="$destinip"
+                pdestinipi="-d $destinip"
+            fi
+            if [[ ((($destinipi) && ($sourceipi)) || ((
+                $destinipi) && ((($snat) || ($smultipori)) || (($snat) && ($pnat))))) ]]; then
+                natport+=("-A MINAT-PRE -p $port_type $sourceipi $smultipori $snat -j DNAT --to-destination $destinipi$pnat")
+                portrts+=("-A coyl-user-input -p $port_type $sourceipi $pdestinipi $spori $multipori -i $dvsaddr -j ACCEPT")
+            fi
+            rstvarford
+        fi
+        if [[ (("$prefijo" == "S") && ("$fortestvar" == ";")) ]]; then
+            if [[ ((("$port1d1" && "$port1d2") && (
+                $port1d2 -gt $port1d1)) && (($port1d1 -gt 1) && ($port1d1 -le 65535) && (
+                $port1d2 -gt 1) && ($port1d2 -le 65535))) ]]; then
+                smultipori="--match multiport --sports $port1d1:$port1d2"
+                multipori="--match multiport --dports $port1d1:$port1d2"
+            fi
+            if [[ (("$port2d1") && ($port2d1 -gt 1) && ($port2d1 -le 65535) && (! "$port1d2")) ]]; then
+                pnat=":$port2d1"
+            fi
+            if [[ (("$port1d1") && ($port1d1 -gt 1) && ($port1d1 -le 65535) && (! "$port1d2")) ]]; then
+                snat="-m $port_type --sport $port1d1"
+                spori="-m $port_type --dport $port1d1"
+            fi
+            if [[ "$sourceip" ]]; then
+                sourceipi="-s $sourceip"
+            fi
+            if [[ "$destinip" ]]; then
+                destinipi="$destinip"
+                pdestinipi="-d $destinip"
+            fi
+            if [[ ((($destinipi) && ($sourceipi)) || ((
+                $destinipi) && ((($snat) || ($smultipori))))) ]]; then
+                local autoface=($(ip a | grep "$sourceip" | awk -F "global " '{print "! -o", $2}'))
+                natport+=("-A MINAT-POST -p $port_type $sourceipi $autoface $smultipori $snat -j SNAT --to-source $destinipi")
+                natport+=("-A NOT-NAT $sourceipi -j RETURN")
+                portrts+=("-A coyl-user-input $sourceipi $smultipori $snat -i $dvsaddr -j ACCEPT")
+                if [[ ${autoface[0]} ]]; then
+                    local autoface=($(ip a | grep "$sourceip" | awk -F "global " '{print $2}'))
+                    #$dvsaddr
+                    portrts+=("-A MINAT-USER -i ${autoface[0]} -o $dvsaddr  -j ACCEPT")
+                fi
+            fi
+            rstvarford
+        fi
+        if [[ (("$prefijo" == "M") && ("$fortestvar" == ";")) ]]; then
+            if [[ ((("$port1d1" && "$port1d2") && (
+                $port1d2 -gt $port1d1)) && (($port1d1 -gt 1) && ($port1d1 -le 65535) && (
+                $port1d2 -gt 1) && ($port1d2 -le 65535))) ]]; then
+                smultipori=" -p $port_type --match multiport --sports $port1d1:$port1d2"
+                multipori="-p $port_type --match multiport --dports $port1d1:$port1d2"
+            fi
+            if [[ (("$port2d1") && ($port2d1 -gt 1) && ($port2d1 -le 65535) && (! "$port1d2")) ]]; then
+                pnat=":$port2d1"
+            fi
+            if [[ (("$port1d1") && ($port1d1 -gt 1) && ($port1d1 -le 65535) && (! "$port1d2")) ]]; then
+                snat=" -p $port_type -m $port_type --sport $port1d1"
+                spori=" -p $port_type -m $port_type --dport $port1d1"
+            fi
+            if [[ "$sourceip" ]]; then
+                sourceipi="-s $sourceip"
+            fi
+            if [[ "$destinip" ]]; then
+                destinipi="$destinip"
+                pdestinipi="-d $destinip"
+            fi
+            if [[ ($sourceipi) ]]; then
+                local autoface=($(ip a | grep "$sourceip" | awk -F "global " '{print "! -o", $2}'))
+                natport+=("-A MINAT-POST $sourceipi $autoface $smultipori $snat -j MASQUERADE")
+                natport+=("-I NOT-NAT $sourceipi -j RETURN")
+                portrts+=("-A coyl-user-input $sourceipi $smultipori $snat -i $dvsaddr -j ACCEPT")
+                if [[ ${autoface[0]} ]]; then
+                    local autoface=($(ip a | grep "$sourceip" | awk -F "global " '{print $2}'))
+                    portrts+=("-A MINAT-USER -i ${autoface[0]} -o $dvsaddr  -j ACCEPT")
+                #portrts+=("-A MINAT-USER -i $autoface -o $dvsaddr -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT")
+                fi
+            fi
+            rstvarford
+        fi
+    }
+    rstvarford() {
+        startport=FALSE
+        prefijo=FALSE
+        portdivis=1
+        unset sourceip
+        unset destinip
+        unset port1d1
+        unset port1d2
+        unset port2d1
+        unset smultipori
+        unset destinipi
+        unset pdestinipi
+        unset sourceipi
+        unset spori
+        unset destinipi_N
+        unset snat
+        unset pnat
+        unset multipori
+        dopulos=ok
+    }
+    portmasterfor() {
+        rstvarford
+        for q in ${port_list[*]}; do
+            for ((interford = 0; interford < ${#q}; interford++)); do
+                fortestvar=${q:interford:1}
+                if [[ "$fortestvar" == "P" ]]; then
+                    rstvarford
+                    prefijo=P
+                elif [[ "$fortestvar" == "N" ]]; then
+                    rstvarford
+                    prefijo=N
+                elif [[ "$fortestvar" == "S" ]]; then
+                    rstvarford
+                    prefijo=S
+                elif [[ "$fortestvar" == "M" ]]; then
+                    rstvarford
+                    prefijo=M
+                fi
+                if [[ "$fortestvar" == ";" ]]; then
+                    break
+                fi
+                if [[ ((("$fortestvar" == "1") || ("$fortestvar" == "2") || (
+                    "$fortestvar" == "3") || ("$fortestvar" == "4") || ("$fortestvar" == "5") || (
+                    "$fortestvar" == "6") || ("$fortestvar" == "7") || ("$fortestvar" == "8") || (
+                    "$fortestvar" == "9") || ("$fortestvar" == "@")) && ("$startport" == "FALSE")) ]]; then
+                    startport=TRUE
+                fi
+                if [[ ((("$fortestvar" == "0") || ("$fortestvar" == ".") || (
+                    "$fortestvar" == "1") || (
+                    "$fortestvar" == "2") || ("$fortestvar" == "3") || (
+                    "$fortestvar" == "4") || ("$fortestvar" == "5") || (
+                    "$fortestvar" == "6") || ("$fortestvar" == "7") || (
+                    "$fortestvar" == "8") || ("$fortestvar" == "9") || (
+                    "$fortestvar" == ":") || ("$fortestvar" == "@") || ("$fortestvar" == "/")) && ((
+                    "$startport" == "TRUE") && ("$prefijo" == "P"))) ]]; then
+                    if [[ (("$fortestvar" == ":") && (($portdivis -eq 1) || ($portdivis -eq 3))) ]]; then
+                        let portdivis++
+                        startport=FALSE
+                    elif [[ (("$fortestvar" == "@") && (($portdivis -eq 1) || ($portdivis -eq 2))) ]]; then
+                        portdivis=3
+                    elif [[ (("$fortestvar" == "@") && (($portdivis -eq 3) || ($portdivis -eq 4))) ]]; then
+                        portdivis=5
+                    elif [[ ((("$fortestvar" == ".") || ("$fortestvar" == "/")) && ($portdivis -eq 3)) ]]; then
+                        destinip+=$fortestvar
+                        startport=FALSE
+                    elif [[ ((("$fortestvar" == ".") || ("$fortestvar" == "/")) && ($portdivis -eq 5)) ]]; then
+                        sourceip+=$fortestvar
+                        startport=FALSE
+                    elif [[ (("$fortestvar" == ".") || ("$fortestvar" == "@") || ("$fortestvar" == ":") || ("$fortestvar" == "/")) ]]; then
+                        let dopulos=none
+                    elif [[ "$portdivis" == "1" ]]; then
+                        port1d1+=$fortestvar
+                    elif [[ "$portdivis" == "2" ]]; then
+                        port1d2+=$fortestvar
+                    elif [[ "$portdivis" == "3" ]]; then
+                        destinip+=$fortestvar
+                    elif [[ (("$portdivis" == "4") && (! "$port1d2")) ]]; then
+                        port2d1+=$fortestvar
+                    elif [[ "$portdivis" == "5" ]]; then
+                        sourceip+=$fortestvar
+                    fi
+                fi
+                if [[ ((("$fortestvar" == "0") || ("$fortestvar" == ".") || (
+                    "$fortestvar" == "1") || (
+                    "$fortestvar" == "2") || ("$fortestvar" == "3") || (
+                    "$fortestvar" == "4") || ("$fortestvar" == "5") || (
+                    "$fortestvar" == "6") || ("$fortestvar" == "7") || (
+                    "$fortestvar" == "8") || ("$fortestvar" == "9") || (
+                    "$fortestvar" == ":") || ("$fortestvar" == "@") || ("$fortestvar" == "/")) && ((
+                    "$startport" == "TRUE") && (("$prefijo" == "N") || ("$prefijo" == "S") || ("$prefijo" == "M")))) ]]; then
+                    if [[ (("$fortestvar" == ":") && (($portdivis -eq 1) || ($portdivis -eq 3))) ]]; then
+                        let portdivis++
+                        startport=FALSE
+                    elif [[ (("$fortestvar" == "@") && (($portdivis -eq 1) || ($portdivis -eq 2))) ]]; then
+                        portdivis=3
+                        startport=FALSE
+                    elif [[ (("$fortestvar" == "@") && (($portdivis -eq 3) || ($portdivis -eq 4))) ]]; then
+                        portdivis=5
+                        startport=FALSE
+                    elif [[ (("$fortestvar" == ".") && ($portdivis -eq 3)) ]]; then
+                        destinip+=$fortestvar
+                        startport=FALSE
+                    elif [[ ((("$fortestvar" == ".") || ("$fortestvar" == "/")) && ($portdivis -eq 5)) ]]; then
+                        sourceip+=$fortestvar
+                    elif [[ (("$fortestvar" == ".") || ("$fortestvar" == "@") || ("$fortestvar" == ":") || ("$fortestvar" == "/")) ]]; then
+                        dopulos=FALSE
+                    elif [[ "$portdivis" == "1" ]]; then
+                        port1d1+=$fortestvar
+                    elif [[ "$portdivis" == "2" ]]; then
+                        port1d2+=$fortestvar
+                    elif [[ "$portdivis" == "3" ]]; then
+                        destinip+=$fortestvar
+                    elif [[ (("$portdivis" == "4") && (! "$port1d2")) ]]; then
+                        port2d1+=$fortestvar
+                    elif [[ "$portdivis" == "5" ]]; then
+                        sourceip+=$fortestvar
+                    fi
+                fi
+            done
+            outputdata
+        done
+
+    }
+    local port_udp=($(cat $directorio_destino/port_udp.conf | grep -v "#"))
+    local port_tcp=($(cat $directorio_destino/port_tcp.conf | grep -v "#"))
+    port_type="tcp"
+    port_list=(${port_tcp[*]})
+    portmasterfor
+    port_type="udp"
+    port_list=(${port_udp[*]})
+    portmasterfor
+    restoresiptables n
+    return 0
+}
+
+update_config() {
+    c_run
+    if [[ ((-e $directorio_destino/config.conf) && (-e $directorio_destino/dns.conf) && (-e $directorio_destino/port_udp.conf) && (-e $directorio_destino/port_tcp.conf) && (-e $directorio_destino/access.txt) && (-e $directorio_destino/listanegra.txt)) ]]; then
+        if [[ $1 ]]; then
+            date_confignew=$(sha1sum $directorio_destino/config.conf | awk '{print $1}')
+            date_registradosnew=$(sha1sum $directorio_destino/access.txt | awk '{print $1}')
+        fi
+        date_dnsnew=$(sha1sum $directorio_destino/dns.conf | awk '{print $1}')
+        date_port_udpnew=$(sha1sum $directorio_destino/port_udp.conf | awk '{print $1}')
+        date_port_tcpnew=$(sha1sum $directorio_destino/port_tcp.conf | awk '{print $1}')
+
+        date_blacklistnew=$(sha1sum $directorio_destino/listanegra.txt | awk '{print $1}')
+        if [[ "$date_configold" != "$date_confignew" ]]; then
+            date_configold="$date_confignew"
+            data_config
+        fi
+        if [[ (("$date_dnsold" != "$date_dnsnew") && (! $1)) ]]; then
+            date_dnsold="$date_dnsnew"
+            dns_config
+        fi
+        if [[ ((("$date_port_udpold" != "$date_port_udpnew") || ("$date_port_tcpold" != "$date_port_tcpnew")) && (! $1)) ]]; then
+            date_port_udpold="$date_port_udpnew"
+            date_port_tcpold="$date_port_tcpnew"
+            portmaster
+        fi
+        if [[ (("$date_registradosold" != "$date_registradosnew") && ($1)) ]]; then
+            date_registradosold="$date_registradosnew"
+            reg_config
+        fi
+        if [[ (("$date_blacklistold" != "$date_blacklistnew") && (! $1)) ]]; then
+            date_blacklistold="$date_blacklistnew"
+            func_negra
+        fi
+    else
+        echo "falta un archivo .conf o .txt de $directorio_destino/"
+        echo "Coylet finaliza y se libera el firewall!!!!"
+        exit
+
+    fi
+}

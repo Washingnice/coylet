@@ -1,0 +1,36 @@
+#!/bin/bash
+
+directorio_destino="${DIRECTORIO_DESTINO:-/etc/coylet}"
+
+case "$1" in
+start)
+  $directorio_destino/source/run start
+  ;;
+stop)
+  $directorio_destino/source/run stop
+  ;;
+restart)
+  $0 stop
+  $directorio_destino/source/run restart
+  sleep 10
+  $0 start
+  ;;
+update)
+  $directorio_destino/source/run update
+  echo "Realizando actualización..."
+  ;;
+check)
+  $directorio_destino/source/run check
+  echo "Verificando estado..."
+  ;;
+reload)
+  $directorio_destino/source/run reaload
+  echo "Recargando configuración..."
+  ;;
+*)
+  echo "Uso: $0 {start|stop|restart|update|check|reload}"
+  exit 1
+  ;;
+esac
+
+exit 0

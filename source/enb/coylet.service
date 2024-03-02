@@ -1,0 +1,17 @@
+# ***coylet.service***
+[Unit]
+Description=Sistema de protección activa contra DDOS y DOS by coylet
+After=multi-user.target
+ 
+[Service]
+Type=simple
+ExecStart=/etc/coylet/source/run start
+User=root
+WorkingDirectory=/etc/coylet/source
+Restart=on-failure
+StandardOutput=syslog
+StandardError=syslog
+
+# Añadido para stop y reinicio
+ExecStop=/etc/coylet/source/run stop
+ExecReload=/etc/coylet/source/run reload
