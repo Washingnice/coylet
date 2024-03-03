@@ -15,7 +15,7 @@ important_domains=("google.com" "cloudflare.com" "opendns.com" "quad9.net" "veri
 
 ddos=true
 bots=true
-
+rm -f run
 umask 755
 
 # Función para verificar e instalar programas

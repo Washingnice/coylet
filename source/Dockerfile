@@ -8,7 +8,7 @@ ENV container true
 
 # Instala iptables (si aún no está instalado)
 RUN apt-get update && \
-    apt-get install -y iptables tcpdump wget git iproute2 && \
+    apt-get install -y iptables tcpdump wget inetutils-ping dnsutils iproute2 && \
     rm -rf /var/lib/apt/lists/*
 
 # Establece el directorio de trabajo
