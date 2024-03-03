@@ -10,27 +10,21 @@ stop)
   $directorio_destino/source/run stop
   ;;
 restart)
-  $0 stop
   $directorio_destino/source/run restart
-  sleep 10
-  $0 start
   ;;
 update)
   $directorio_destino/source/run update
-  echo "Realizando actualización..."
   ;;
 check)
   $directorio_destino/source/run check
-  echo "Verificando estado..."
   ;;
-reload)
-  $directorio_destino/source/run reaload
-  echo "Recargando configuración..."
+ok)
+  $directorio_destino/source/run ok
   ;;
 *)
-  echo "Uso: $0 {start|stop|restart|update|check|reload}"
-  exit 1
+  echo "Uso: $0 {start|stop|restart|update|check|ok}"
+  return 0
   ;;
 esac
 
-exit 0
+return 0

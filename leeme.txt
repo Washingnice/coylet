@@ -1,4 +1,5 @@
 Coylet es un programa que se diseño para solulucionar tres grandes problemas en el mundo de los servidores.
+(IMPORTANTE! EN LA INSTALACION EL PROGRAMA ESTA CONFIGURADO PARA USAR SSH EN EL PUERTO 22. SI USTED LO CAMBIO DEBE REBEER ESA CONFIGURACION)
 
 1. Reglas de firewall, control de puertos, NAT y MASQUERADE. De forma programatica en dos archivos que almacena la configuracion de forma legible.
 2. Mitigacion DDos por contador de SOCKET remotos gracias a tcpdump.

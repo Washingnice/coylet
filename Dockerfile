@@ -3,12 +3,11 @@ FROM ubuntu:22.04
 
 # Establece la variable de entorno directorio_destino
 ENV directorio_destino /app
-ENV container true
 
 
 # Instala iptables (si aún no está instalado)
 RUN apt-get update && \
-    apt-get install -y iptables tcpdump wget inetutils-ping coreutils dnsutils iproute2 && \
+    apt-get install -y wget && \
     rm -rf /var/lib/apt/lists/*
 
 # Establece el directorio de trabajo

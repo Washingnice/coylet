@@ -287,10 +287,16 @@ botsprotect() {
 }
 
 dockerfire() {
-    echo "{" >/etc/docker/daemon.json
-    echo '"iptables": false' >>/etc/docker/daemon.json
-    echo "}" >>/etc/docker/daemon.json
-    cat $directorio_destino/firewall/iptables.conf | iptables-restore
+    if command -v "docker" &>/dev/null; then
+        echo "{" >/etc/docker/daemon.json
+        echo '"iptables": false' >>/etc/docker/daemon.json
+        echo "}" >>/etc/docker/daemon.json
+    fi
+    if [[ -f "$directorio_destino/firewall/iptables.back" ]]; then
+        cat $directorio_destino/firewall/iptables.back | iptables-restore
+    else
+        cat $directorio_destino/firewall/iptables.conf | iptables-restore
+    fi
 }
 
 restoresiptables() {
@@ -308,8 +314,16 @@ restoresiptables() {
     local inttmp
     local inttmp2
 
+    at_restore() {
+        if [[ -f "$directorio_destino/firewall/iptables.back" ]]; then
+            cat $directorio_destino/firewall/iptables.back | iptables-restore
+            rm -f $directorio_destino/firewall/iptables.back
+            echo "Los cambios efectuados en las reglas de rutas fueron revenidos a la version anterior |$(date)|" >>$directorio_destino/log/log.txt
+        fi
+    }
+
     if [[ (("$1" == "n") || (("$1" == "b") && ("$botsdat"))) ]]; then
-        if [[ "$1" == "n" ]]; then
+        if [[ ("$1" == "n") && (! -f "$directorio_destino/firewall/iptables.back") ]]; then
 
             inttmp=("*nat")
             for l in ${natport[*]}; do
@@ -322,7 +336,7 @@ restoresiptables() {
                 inttmp2+=("$l")
             done
             inttmp2+=("COMMIT" "#comentarios")
-
+            itables-save >$directorio_destino/firewall/iptables.back
             iptables -F coyl-user-input
             iptables -t nat -F MINAT-PRE
             iptables -t nat -F NOT-NAT
@@ -330,6 +344,8 @@ restoresiptables() {
             iptables -F MINAT-USER
             iptables -t nat -A NOT-NAT -j MINAT-PRE
             subfor | iptables-restore -n
+            at_restore
+
         elif [[ "$1" == "b" ]]; then
             inttmp=("*filter")
             for I in ${botsdat[*]}; do
@@ -343,7 +359,7 @@ restoresiptables() {
             return 0
         fi
     else
-        return 1
+        return 0
     fi
     unset natport
     unset portrts

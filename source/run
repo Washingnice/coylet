@@ -2,19 +2,18 @@
 
 if [[ $EUID -ne 0 ]]; then
     echo "Solo el usuario root puede ejecutar este programa."
-    unset ddos
-    unset bots
     exit 1 # Salir con un código de error
 fi
 directorio_destino="${directorio_destino:-/etc/coylet}"
 repositorio_git="${repositorio_git:-https://raw.githubusercontent.com/Washingnice/coylet/master}"
 # Lista de servidores importantes
 
-important_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222" "64.6.64.6")
-important_domains=("google.com" "cloudflare.com" "opendns.com" "quad9.net" "verisign.com")
+important_servers="${important_servers:-("8.8.8.8" "1.1.1.1" "208.67.222.222" "64.6.64.6")}"
+important_domains="${important_domains:-("google.com" "cloudflare.com" "opendns.com" "quad9.net" "verisign.com")}"
 
-ddos=true
-bots=true
+ddos="${ddos:-true}"
+bots="${bots:-false}"
+
 if [[ -f run ]]; then
     rm -f run
 fi
@@ -90,11 +89,11 @@ server_ok() {
         check_and_install "cut"
         check_and_install "sort"
         check_and_install "wget"
-        check_and_install "git"
         check_and_install "nano"
         check_and_install "uniq"
         check_and_install "iptables"
         check_and_install "tr"
+        check_and_install "at"
         check_and_install "stat" "coreutils"
 
         # Instalar el paquete adecuado para ping dependiendo del sistema
@@ -231,7 +230,6 @@ autostart_run() {
 }
 
 update_coylet() {
-    server_ok
     regs_st nocheck
 
     # Definir extensiones a excluir
@@ -304,6 +302,9 @@ update_coylet() {
             echo "El archivo $ruta_archivo ha sido descargado!"
         fi
     done
+    if ! [[ -L "/usr/sbin/coylet" ]] && [[ -f "$directorio_destino/source/enb/coylet" ]]; then
+        ln -s "$directorio_destino/source/enb/coylet" /usr/sbin
+    fi
 
     regs_st check
     echo "Sistema de archivos ok!"
@@ -422,7 +423,6 @@ c_start() {
     fi
 }
 
-
 c_stop() {
     local result
     result=$(obt_st)
@@ -466,7 +466,7 @@ update() {
 }
 
 check() {
-    echo "Verificando el coylet..."
+    echo "Verificando el sistema..."
     server_ok
 }
 
@@ -477,10 +477,25 @@ install() {
     autostart_run
 }
 
+ok_iptables() {
+    local result
+    result=$(obt_st)
+    if [[ ("$result" -ne 1) && ("$result" -ne 3) ]]; then
+        echo "coylet no se esta ejecutando. Opccion inerente!"
+    else
+        if [[ -f "$directorio_destino/firewall/iptables.back" ]]; then
+            rm -f $directorio_destino/firewall/iptables.back
+            echo "Se retira exitosamente alerta de seguridad!"
+        else
+            echo "No hay alerta de seguridad! Nada que verificar. solo hay 2 munitos para confirmar"
+        fi
+    fi
+}
+
 # Validar si se proporciona un argumento
 if [ -z "$1" ]; then
-    echo "Uso: $0 {start|stop|restart|update|check|reload}"
-    exit 1
+    echo "Uso: $0 {start|stop|restart|update|check|ok}"
+    return 0
 fi
 
 # Ejecutar la función correspondiente al argumento proporcionado
@@ -491,8 +506,9 @@ restart) restart ;;
 update) update ;;
 check) check ;;
 install) install ;;
+ok) ok_iptables ;;
 *)
-    echo "Uso: $0 {start|stop|restart|update|check|reload}"
-    exit 1
+    echo "Uso: $0 {start|stop|restart|update|check|ok}"
+    return 0
     ;;
 esac
