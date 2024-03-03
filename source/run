@@ -14,6 +14,7 @@ important_domains="${important_domains:-("google.com" "cloudflare.com" "opendns.
 if [[ -f $directorio_destino/source/init ]]; then
     source $directorio_destino/source/init
 fi
+
 ddos="${ddos:-true}"
 bots="${bots:-false}"
 
@@ -275,6 +276,9 @@ update_coylet() {
     fi
     if ! [ -d "$directorio_destino/source/enb" ]; then
         mkdir $directorio_destino/source/enb
+    fi
+    if ! [ -d "$directorio_destino/source/log" ]; then
+        mkdir $directorio_destino/source/log
     fi
     for archivo in "${archivos[@]}"; do
         # Extraer la extensión del archivo
