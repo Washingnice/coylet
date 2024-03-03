@@ -277,8 +277,8 @@ update_coylet() {
     if ! [ -d "$directorio_destino/source/enb" ]; then
         mkdir $directorio_destino/source/enb
     fi
-    if ! [ -d "$directorio_destino/source/log" ]; then
-        mkdir $directorio_destino/source/log
+    if ! [ -d "$directorio_destino/log" ]; then
+        mkdir $directorio_destino/log
     fi
     for archivo in "${archivos[@]}"; do
         # Extraer la extensión del archivo
