@@ -336,7 +336,7 @@ restoresiptables() {
                 inttmp2+=("$l")
             done
             inttmp2+=("COMMIT" "#comentarios")
-            itables-save >$directorio_destino/firewall/iptables.back
+            iptables-save >$directorio_destino/firewall/iptables.back
             iptables -F coyl-user-input
             iptables -t nat -F MINAT-PRE
             iptables -t nat -F NOT-NAT
