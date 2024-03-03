@@ -228,6 +228,7 @@ autostart_run() {
             sleep 10
         fi
     fi
+    cd "$directorio_destino"
     return 0
 }
 

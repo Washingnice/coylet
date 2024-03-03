@@ -23,8 +23,5 @@ ok)
   ;;
 *)
   echo "Uso: $0 {start|stop|restart|update|check|ok}"
-  return 0
   ;;
 esac
-
-return 0
