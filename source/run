@@ -173,7 +173,7 @@ autostart_run() {
     if ! [[ "$container" == "true" ]]; then
         PROGRAM_NAME="coylet"
         if ! [[ ($PROGRAM_DIRECTORY) ]]; then
-            PROGRAM_DIRECTORY="$directorio_destino/source/"
+            PROGRAM_DIRECTORY="$directorio_destino/source/enb"
         fi
         cd ${PROGRAM_DIRECTORY}
 
