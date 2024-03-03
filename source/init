@@ -315,6 +315,7 @@ restoresiptables() {
     local inttmp2
 
     at_restore() {
+        sleep 2m
         if [[ -f "$directorio_destino/firewall/iptables.back" ]]; then
             cat $directorio_destino/firewall/iptables.back | iptables-restore >/dev/null 2>&1
             rm -f $directorio_destino/firewall/iptables.back
