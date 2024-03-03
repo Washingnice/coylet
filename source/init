@@ -173,7 +173,7 @@ dataload() {
     srcnothost=$(for I in ${loopbackips32[*]}; do echo "and not src host $I "; done)
     sumvar=0
     IFS=$'\n'
-    cache=($(tcpdump -i $dvsaddr -Nq -c 500 -n not icmp and not src 443 and not src 80 $srcnothost)) &>/dev/null
+    cache=($(tcpdump -i $dvsaddr -Nq -c 500 -n not icmp and not src 443 and not src 80 $srcnothost)) 2>&1 >/dev/null
     database=($(for L in ${cache[@]}; do echo $L; done | grep -v "IP6" | grep "IP" | awk '{print $3}' | sort | uniq | tr "." " " | awk '{print $1"."$2"."$3"."$4}'))
 
     oldvar=
