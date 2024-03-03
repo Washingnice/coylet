@@ -260,56 +260,44 @@ update_coylet() {
     for archivo in "${archivos[@]}"; do
         # Extraer la extensión del archivo
         extension="${archivo##*.}"
+        ruta_archivo="$directorio_destino/$archivo"
 
         # Verificar si la extensión está excluida
-        if [[ ! " ${extensiones_excluidas[@]} " =~ " $extension " ]]; then
-            ruta_archivo="$directorio_destino/$archivo"
+        if [[ ((" ${extensiones_excluidas[*]} " == *"$extension"*) && (-f "$ruta_archivo")) ]]; then
+            echo "El archivo $archivo es de configuración y no se actualiza."
+            continue
+        fi
 
-            # Verificar si el archivo existe localmente
-            if [ -f "$ruta_archivo" ]; then
-                echo "Verificando actualizaciones para el archivo $archivo..."
+        # Verificar si el archivo existe localmente
+        if [[ -f $ruta_archivo ]]; then
+            #echo "Verificando actualizaciones para el archivo $archivo..."
 
-                # Obtener el hash SHA-1 del archivo local
-                sha_local=$(sha1sum "$ruta_archivo" | awk '{print $1}')
+            # Obtener el hash SHA-1 del archivo local
+            sha_local=$(sha1sum "$ruta_archivo" | awk '{print $1}')
 
-                # Obtener el hash SHA-1 del archivo en GitHub
-                sha_github=$(wget -qO- "$repositorio_git/$archivo" | sha1sum | awk '{print $1}')
+            # Obtener el hash SHA-1 del archivo en GitHub
+            sha_github=$(wget -qO- "$repositorio_git/$archivo" | sha1sum | awk '{print $1}')
 
-                # Comparar los hashes
-                if [ "$sha_local" != "$sha_github" ]; then
-                    echo "Hay actualizaciones para el archivo $archivo. Actualizando..."
-                    # Descargar el archivo desde GitHub si hay actualizaciones
-                    wget -qO "$ruta_archivo" "$repositorio_git/$archivo"
-                    # Verificar y ajustar propietario y permisos después de actualizar el archivo
-                    chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
-                    chown root:root "$ruta_archivo"
-                    echo "El archivo $ruta_archivo ha sido actualizado"
-                else
-                    echo "El archivo $archivo ya está actualizado."
-                fi
-            else
-                echo "El archivo $archivo no existe localmente. Descargándolo desde el repositorio de GitHub."
-
-                # Descargar el archivo desde GitHub
+            # Comparar los hashes
+            if [ "$sha_local" != "$sha_github" ]; then
+                #echo "Hay actualizaciones para el archivo $archivo. Actualizando..."
+                # Descargar el archivo desde GitHub si hay actualizaciones
                 wget -qO "$ruta_archivo" "$repositorio_git/$archivo"
-
-                # Verificar y ajustar propietario y permisos después de descargar el archivo
+                # Verificar y ajustar propietario y permisos después de actualizar el archivo
                 chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
                 chown root:root "$ruta_archivo"
-                echo "El archivo $ruta_archivo ha sido descargado!"
+                echo "El archivo $ruta_archivo ha sido actualizado"
+            else
+                echo "El archivo $archivo ya está actualizado."
             fi
-        elif ! [ -f "$ruta_archivo" ]; then
-            echo "El archivo $archivo no existe localmente. Descargándolo desde el repositorio de GitHub."
-
+        else
+            #echo "El archivo $archivo no existe localmente. Descargándolo desde el repositorio de GitHub."
             # Descargar el archivo desde GitHub
             wget -qO "$ruta_archivo" "$repositorio_git/$archivo"
-
             # Verificar y ajustar propietario y permisos después de descargar el archivo
             chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
             chown root:root "$ruta_archivo"
             echo "El archivo $ruta_archivo ha sido descargado!"
-            echo "La extensión $extension está excluida para el archivo $archivo. Omitiendo descarga."
-
         fi
     done
 
