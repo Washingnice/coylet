@@ -399,9 +399,9 @@ obt_st() {
 
 c_run() {
     obt_st
-
+    local valor=$?
     # Verificar si el estado es ni 1 ni 3
-    if [[ ($? -ne 1) && ($? -ne 3) ]]; then
+    if [[ ("$valor" -ne 1) && ("$valor" -ne 3) ]]; then
         exit 0
     else
         return 0
@@ -410,7 +410,8 @@ c_run() {
 
 c_install() {
     obt_st
-    if [[ $? -eq 2 ]]; then
+    local valor=$?
+    if [[ "$valor" -eq 2 ]]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
@@ -424,19 +425,20 @@ c_start() {
     fi
 
     obt_st
-
+    local valor=$?
     if [[ "$container" == "true" ]]; then
         update_coylet
-    elif [[ $? -ne 0 ]]; then
+    elif [[ "$valor" -ne "0" ]]; then
         echo "No se puede iniciar el programa porque las condiciones no están dadas"
-        sleep 5
+        sleep 10
         exit 1
     fi
 }
 
 c_stop() {
     obt_st
-    if [[ $? -ne 1 ]]; then
+    local valor=$?
+    if [[ "$valor" -ne 1 ]]; then
         echo "no se puede detener el programa si no esta instalado o corriendo"
         sleep 5
         exit 1
