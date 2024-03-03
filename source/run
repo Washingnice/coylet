@@ -11,6 +11,9 @@ repositorio_git="${repositorio_git:-https://raw.githubusercontent.com/Washingnic
 important_servers="${important_servers:-("8.8.8.8" "1.1.1.1" "208.67.222.222" "64.6.64.6")}"
 important_domains="${important_domains:-("google.com" "cloudflare.com" "opendns.com" "quad9.net" "verisign.com")}"
 
+if [[ -f $directorio_destino/source/init ]]; then
+    source $directorio_destino/source/init
+fi
 ddos="${ddos:-true}"
 bots="${bots:-false}"
 
@@ -450,8 +453,7 @@ start() {
     echo "Iniciando el coylet..."
     sleep 4
     regs_st run
-    source $directorio_destino/source/init
-    coylet
+    coylet_run
 }
 
 stop() {

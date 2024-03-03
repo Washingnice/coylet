@@ -7,7 +7,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1 # Salir con un código de error
 fi
 
-coylet() {
+coylet_run() {
     cd $directorio_destino/source
     #var de enterno iniciales
     pre_config
