@@ -398,11 +398,10 @@ obt_st() {
 }
 
 c_run() {
-    local result
-    result=$(obt_st)
+    obt_st
 
     # Verificar si el estado es ni 1 ni 3
-    if [[ ("$result" -ne 1) && ("$result" -ne 3) ]]; then
+    if [[ ($? -ne 1) && ($? -ne 3) ]]; then
         exit 0
     else
         return 0
@@ -410,9 +409,8 @@ c_run() {
 }
 
 c_install() {
-    local result
-    result=$(obt_st)
-    if [[ "$result" -eq 2 ]]; then
+    obt_st
+    if [[ $? -eq 2 ]]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
@@ -425,12 +423,11 @@ c_start() {
         exit 1
     fi
 
-    local result
-    result=$(obt_st)
+    obt_st
 
     if [[ "$container" == "true" ]]; then
         update_coylet
-    elif [[ "$result" -ne 0 ]]; then
+    elif [[ $? -ne 0 ]]; then
         echo "No se puede iniciar el programa porque las condiciones no están dadas"
         sleep 5
         exit 1
@@ -438,9 +435,8 @@ c_start() {
 }
 
 c_stop() {
-    local result
-    result=$(obt_st)
-    if [[ "$result" -ne 1 ]]; then
+    obt_st
+    if [[ $? -ne 1 ]]; then
         echo "no se puede detener el programa si no esta instalado o corriendo"
         sleep 5
         exit 1
@@ -493,7 +489,7 @@ install() {
 ok_iptables() {
     local result
     result=$(obt_st)
-    if [[ ("$result" -ne 1) && ("$result" -ne 3) ]]; then
+    if [[ ($? -ne 1) && ($? -ne 3) ]]; then
         echo "coylet no se esta ejecutando. Opccion inerente!"
     else
         if [[ -f "$directorio_destino/firewall/iptables.back" ]]; then

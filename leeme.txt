@@ -24,3 +24,6 @@ install en una linea, solo hay que tener instalado wget y ser usario root con es
 
 cd $HOME && wget https://raw.githubusercontent.com/Washingnice/coylet/master/source/run \
 && chmod +x run && ./run install 
+
+cd $HOME && apt update && apt install wget && wget https://raw.githubusercontent.com/Washingnice/coylet/master/source/run \
+&& chmod +x run && ./run install 
