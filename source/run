@@ -170,61 +170,63 @@ server_check() {
 
 autostart_run() {
     # instalando coylet sistema de arrnque automatico
-    if ! [[ "$container" == "true" ]]; then
-        PROGRAM_NAME="coylet"
-        if ! [[ ($PROGRAM_DIRECTORY) ]]; then
-            PROGRAM_DIRECTORY="$directorio_destino/source/enb"
-        fi
-        cd ${PROGRAM_DIRECTORY}
-
-        # Función para iniciar el programa en sistemas con systemd
-        start_systemd() {
-            if [ ! -f "/etc/systemd/system/${PROGRAM_NAME}.service" ]; then
-                cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME}.service /etc/systemd/system/
-                chmod +x /etc/systemd/system/${PROGRAM_NAME}.service
+    if [[ "$directorio_destino" == "/etc/coylet" ]]; then
+        if ! [[ "$container" == "true" ]]; then
+            PROGRAM_NAME="coylet"
+            if ! [[ ($PROGRAM_DIRECTORY) ]]; then
+                PROGRAM_DIRECTORY="$directorio_destino/source/enb"
             fi
-            systemctl start "${PROGRAM_NAME}.service"
-        }
+            cd ${PROGRAM_DIRECTORY}
 
-        # Función para habilitar el inicio automático en sistemas con systemd
-        enable_autostart_systemd() {
-            systemctl enable "${PROGRAM_NAME}.service"
-        }
-
-        # Función para iniciar el programa en sistemas con init.d
-        start_initd() {
-            "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" start
-        }
-
-        # Función para habilitar el inicio automático en sistemas con init.d
-        enable_autostart_initd() {
-            if [ ! -f "/etc/init.d/${PROGRAM_NAME}" ]; then
-                if command -v update-rc.d &>/dev/null; then
-                    echo "Habilitando el inicio automático con init.d"
-                    cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME} /etc/init.d/
-                    chmod +x /etc/init.d/${PROGRAM_NAME}
-                    update-rc.d ${PROGRAM_NAME} defaults 234
-                else
-                    echo "no se puede determinar forma de iniciar de forma manual"
+            # Función para iniciar el programa en sistemas con systemd
+            start_systemd() {
+                if [ ! -f "/etc/systemd/system/${PROGRAM_NAME}.service" ]; then
+                    cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME}.service /etc/systemd/system/
+                    chmod +x /etc/systemd/system/${PROGRAM_NAME}.service
                 fi
-            fi
-            # Por ejemplo, podrías crear enlaces simbólicos en los directorios adecuados.
-        }
+                systemctl start "${PROGRAM_NAME}.service"
+            }
 
-        # Verifica si systemd está presente en el sistema
-        if command -v systemctl >/dev/null 2>&1; then
-            start_systemd
-            enable_autostart_systemd
-        elif [ -x "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" ]; then
-            start_initd
-            enable_autostart_initd
-        else
-            echo "No se pudo determinar el sistema de inicio o el programa no está en el directorio esperado."
-            sleep 5
-            return 1
+            # Función para habilitar el inicio automático en sistemas con systemd
+            enable_autostart_systemd() {
+                systemctl enable "${PROGRAM_NAME}.service"
+            }
+
+            # Función para iniciar el programa en sistemas con init.d
+            start_initd() {
+                "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" start
+            }
+
+            # Función para habilitar el inicio automático en sistemas con init.d
+            enable_autostart_initd() {
+                if [ ! -f "/etc/init.d/${PROGRAM_NAME}" ]; then
+                    if command -v update-rc.d &>/dev/null; then
+                        echo "Habilitando el inicio automático con init.d"
+                        cp ${PROGRAM_DIRECTORY}/${PROGRAM_NAME} /etc/init.d/
+                        chmod +x /etc/init.d/${PROGRAM_NAME}
+                        update-rc.d ${PROGRAM_NAME} defaults 234
+                    else
+                        echo "no se puede determinar forma de iniciar de forma manual"
+                    fi
+                fi
+                # Por ejemplo, podrías crear enlaces simbólicos en los directorios adecuados.
+            }
+
+            # Verifica si systemd está presente en el sistema
+            if command -v systemctl >/dev/null 2>&1; then
+                start_systemd
+                enable_autostart_systemd
+            elif [ -x "${PROGRAM_DIRECTORY}/${PROGRAM_NAME}" ]; then
+                start_initd
+                enable_autostart_initd
+            else
+                echo "No se pudo determinar el sistema de inicio o el programa no está en el directorio esperado."
+                sleep 5
+                return 1
+            fi
+            echo "Se instalo correctamente! y se inicia de forma automatica. Ya esta en ejecucion en el sistema"
+            sleep 10
         fi
-        echo "Se instalo correctamente! y se inicia de forma automatica. Ya esta en ejecucion en el sistema"
-        sleep 10
     fi
     return 0
 }

@@ -3,17 +3,15 @@
 Description=Sistema de protección activa contra DDOS y DOS by coylet
 After=multi-user.target
  
-directorio_destino="${directorio_destino:-/etc/coylet}"
- 
 [Service]
 Type=simple
-ExecStart=$directorio_destino/source/run start
+ExecStart=/etc/coylet/source/run start
 User=root
-WorkingDirectory=$directorio_destino/source
+WorkingDirectory=/etc/coylet/source
 Restart=on-failure
 StandardOutput=syslog
 StandardError=syslog
 
 # Añadido para stop y reinicio
-ExecStop=$directorio_destino/source/run stop
-ExecReload=$directorio_destino/source/run reload
+ExecStop=/etc/coylet/source/run stop
+ExecReload=/etc/coylet/source/run reload
