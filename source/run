@@ -17,6 +17,14 @@ bots="${bots:-false}"
 if [[ -f run ]]; then
     rm -f run
 fi
+
+current_directory="$PWD"
+
+if ! [[ "$current_directory" == "$directorio_destino/source" ]]; then
+    if [[ -f run ]]; then
+        rm -f run
+    fi
+fi
 umask 755
 
 # Función para verificar e instalar programas
