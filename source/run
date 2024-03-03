@@ -16,7 +16,7 @@ important_domains=("google.com" "cloudflare.com" "opendns.com" "quad9.net" "veri
 ddos=true
 bots=true
 if [[ -f run ]]; then
-rm -f run
+    rm -f run
 fi
 umask 755
 
@@ -101,7 +101,7 @@ server_ok() {
         fi
 
         if ! command -v ip &>/dev/null; then
-            check_and_install "ip" "iproute2"  # Para sistemas basados en Debian/Ubuntu
+            check_and_install "ip" "iproute2" # Para sistemas basados en Debian/Ubuntu
             check_and_install "ip" "iproute2" # Para sistemas basados en Red Hat/CentOS
         fi
 
@@ -381,7 +381,7 @@ obt_st() {
 }
 
 c_run() {
-    estado=$(obt_st)
+    local estado=$(obt_st)
     # Verificar si el estado no es ni 1 ni 3
     if [[ ($estado -eq 1) || ($estado -eq 3) ]]; then
         return 0
@@ -392,21 +392,22 @@ c_run() {
 }
 
 c_install() {
-
-    if [[ "$(obt_st)" -eq 2 ]]; then
+    local estado=$(obt_st)
+    if [[ $estado -eq 2 ]]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
 }
 
 c_start() {
+    local estado=$(obt_st)
     if ! iptables -t nat -S &>/dev/null; then
         echo "No hay permisos de red para poder manejar con iptables"
         sleep 5
         exit 1
     fi
     if ! [[ ("$container" == "true") ]]; then
-        if ! [[ "$(obt_st)" -eq 0 ]]; then
+        if ! [[ $estado -eq 0 ]]; then
             echo "No se puede iniciar el programa, por que las condiciones no estan dadas"
             sleep 5
             exit 1
@@ -417,7 +418,8 @@ c_start() {
 }
 
 c_stop() {
-    if ! [[ ("$(obt_st)" -eq 1) ]]; then
+    local estado=$(obt_st)
+    if ! [[ ($estado -eq 1) ]]; then
         echo "no se puede detener el programa si no esta instalado o corriendo"
         sleep 5
         exit 1
