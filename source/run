@@ -266,7 +266,6 @@ update_coylet() {
 
         # Verificar si la extensión está excluida
         if [[ ((" ${extensiones_excluidas[*]} " == *"$extension"*) && (-f "$ruta_archivo")) ]]; then
-            echo "El archivo $archivo es de configuración y no se actualiza."
             continue
         fi
 
@@ -289,8 +288,6 @@ update_coylet() {
                 chmod 755 "$ruta_archivo" && chmod +x "$ruta_archivo"
                 chown root:root "$ruta_archivo"
                 echo "El archivo $ruta_archivo ha sido actualizado"
-            else
-                echo "El archivo $archivo ya está actualizado."
             fi
         else
             #echo "El archivo $archivo no existe localmente. Descargándolo desde el repositorio de GitHub."
@@ -381,9 +378,9 @@ obt_st() {
 }
 
 c_run() {
-    local estado=$(obt_st)
+    obt_st
     # Verificar si el estado no es ni 1 ni 3
-    if [[ ($estado -eq 1) || ($estado -eq 3) ]]; then
+    if [[ ($? -eq 1) || ($? -eq 3) ]]; then
         return 0
     else
         exit 0
@@ -392,22 +389,22 @@ c_run() {
 }
 
 c_install() {
-    local estado=$(obt_st)
-    if [[ $estado -eq 2 ]]; then
+    obt_st
+    if [[ $? -eq 2 ]]; then
         echo "No se puede continuar con la instalacion si no se detiene el programa o ya se instalo, ejecuta update"
         exit 0
     fi
 }
 
 c_start() {
-    local estado=$(obt_st)
     if ! iptables -t nat -S &>/dev/null; then
         echo "No hay permisos de red para poder manejar con iptables"
         sleep 5
         exit 1
     fi
+    obt_st
     if ! [[ ("$container" == "true") ]]; then
-        if ! [[ $estado -eq 0 ]]; then
+        if ! [[ $? -eq 0 ]]; then
             echo "No se puede iniciar el programa, por que las condiciones no estan dadas"
             sleep 5
             exit 1
@@ -418,8 +415,8 @@ c_start() {
 }
 
 c_stop() {
-    local estado=$(obt_st)
-    if ! [[ ($estado -eq 1) ]]; then
+    obt_st
+    if ! [[ $? -eq 1 ]]; then
         echo "no se puede detener el programa si no esta instalado o corriendo"
         sleep 5
         exit 1
