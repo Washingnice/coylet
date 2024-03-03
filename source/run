@@ -99,7 +99,7 @@ server_ok() {
         fi
 
         if ! command -v ip &>/dev/null; then
-            check_and_install "ip" "iproute"  # Para sistemas basados en Debian/Ubuntu
+            check_and_install "ip" "iproute2"  # Para sistemas basados en Debian/Ubuntu
             check_and_install "ip" "iproute2" # Para sistemas basados en Red Hat/CentOS
         fi
 
