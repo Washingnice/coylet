@@ -6,3 +6,21 @@ Coylet es un programa que se diseño para solulucionar tres grandes problemas en
 3. Carga automatica de la lista mundial BOOTNET. Mas de 50 mil ips en segundos.
 
 Se diseño de tal manera que no tenga impacto en CPU. Como tampoco se hacen escrituras en disco.
+
+VARIABLES DE ENTORNO
+
+directorio_destino="${directorio_destino:-/etc/coylet}"
+repositorio_git="${repositorio_git:-https://raw.githubusercontent.com/Washingnice/coylet/master}"
+# Lista de servidores importantes
+important_servers="${important_servers:-("8.8.8.8" "1.1.1.1" "208.67.222.222" "64.6.64.6")}"
+important_domains="${important_domains:-("google.com" "cloudflare.com" "opendns.com" "quad9.net" "verisign.com")}"
+
+ddos="${ddos:-true}" mitigacion ddos
+bots="${bots:-false}" proteccion contra botnet no soportado en esta version pronto se implementara
+
+si se quiere manegar alguna variable: export ddos=false 
+
+install en una linea, solo hay que tener instalado wget y ser usario root con eso alcanza: 
+
+cd $HOME && wget https://raw.githubusercontent.com/Washingnice/coylet/master/source/run \
+&& chmod +x run && ./run install 
