@@ -152,7 +152,7 @@ closenet() {
         echo "-A netbackup -d 0.0.0.0/0 -j DROP" >>/tmp/coylet_tmp/netbackup.tmp
         echo "COMMIT" >>/tmp/coylet_tmp/netbackup.tmp
         echo "#fin fin" >>/tmp/coylet_tmp/netbackup.tmp
-        cat /tmp/coylet_tmp/netbackup.tmp | iptables-restore -n
+        cat /tmp/coylet_tmp/netbackup.tmp | iptables-restore -n >/dev/null 2>&1
         rm -f /tmp/coylet_tmp/netbackup.tmp
         #log registro/////
         date >>$directorio_destino/log/registro/panorama-blk.txt
@@ -173,7 +173,7 @@ dataload() {
     srcnothost=$(for I in ${loopbackips32[*]}; do echo "and not src host $I "; done)
     sumvar=0
     IFS=$'\n'
-    cache=($(tcpdump -i $dvsaddr -Nq -c 500 -n not icmp and not src 443 and not src 80 $srcnothost)) 2>&1 >/dev/null
+    cache=($(tcpdump -i $dvsaddr -Nq -c 500 -n not icmp and not src 443 and not src 80 $srcnothost)) >/dev/null 2>&1
     database=($(for L in ${cache[@]}; do echo $L; done | grep -v "IP6" | grep "IP" | awk '{print $3}' | sort | uniq | tr "." " " | awk '{print $1"."$2"."$3"."$4}'))
 
     oldvar=
@@ -293,9 +293,9 @@ dockerfire() {
         echo "}" >>/etc/docker/daemon.json
     fi
     if [[ -f "$directorio_destino/firewall/iptables.back" ]]; then
-        cat $directorio_destino/firewall/iptables.back | iptables-restore
+        cat $directorio_destino/firewall/iptables.back | iptables-restore >/dev/null 2>&1
     else
-        cat $directorio_destino/firewall/iptables.conf | iptables-restore
+        cat $directorio_destino/firewall/iptables.conf | iptables-restore >/dev/null 2>&1
     fi
 }
 
@@ -316,7 +316,7 @@ restoresiptables() {
 
     at_restore() {
         if [[ -f "$directorio_destino/firewall/iptables.back" ]]; then
-            cat $directorio_destino/firewall/iptables.back | iptables-restore
+            cat $directorio_destino/firewall/iptables.back | iptables-restore >/dev/null 2>&1
             rm -f $directorio_destino/firewall/iptables.back
             echo "Los cambios efectuados en las reglas de rutas fueron revenidos a la version anterior |$(date)|" >>$directorio_destino/log/log.txt
         fi
@@ -336,15 +336,15 @@ restoresiptables() {
                 inttmp2+=("$l")
             done
             inttmp2+=("COMMIT" "#comentarios")
-            iptables-save >$directorio_destino/firewall/iptables.back
+            iptables-save >$directorio_destino/firewall/iptables.back 2>/dev/null
             iptables -F coyl-user-input
             iptables -t nat -F MINAT-PRE
             iptables -t nat -F NOT-NAT
             iptables -t nat -F MINAT-POST
             iptables -F MINAT-USER
             iptables -t nat -A NOT-NAT -j MINAT-PRE
-            subfor | iptables-restore -n
-            at_restore
+            subfor | iptables-restore -n >/dev/null 2>&1
+            at_restore &
 
         elif [[ "$1" == "b" ]]; then
             inttmp=("*filter")
