@@ -235,8 +235,8 @@ update_coylet() {
     archivos=(
         "config.conf"
         "dns.conf"
-        "tcp_p.conf"
-        "udp_p.conf"
+        "port_tcp.conf"
+        "port_udp.conf"
         "access.txt"
         "listanegra.txt"
         "leeme.txt"
