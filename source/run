@@ -92,6 +92,7 @@ server_ok() {
                 echo "$program OK"
             fi
         }
+        server_check
         update_repos
         # Verificar e instalar programas
         check_and_install "sha1sum"
@@ -124,10 +125,11 @@ server_ok() {
             check_and_install "host" "dnsutils"   # Para sistemas basados en Debian/Ubuntu
             check_and_install "host" "bind-utils" # Para sistemas basados en Red Hat/CentOS
         fi
-        echo "todos los script OK"
+        echo "todos los script en el servidor OK"
+        regs_st check
         rm -rf /var/lib/apt/lists/*
     fi
-    server_check
+    regs_st check
     return 0
 }
 
@@ -139,7 +141,7 @@ server_check() {
                 echo "Conexión a $server por ping exitosa."
             else
                 echo "No se puede establecer conexión a $server por ping. Verifica tu conexión. coylet intentara iniciar en 2 minutos"
-                sleep 2m
+                sleep 5
                 return 1
             fi
         done
@@ -152,7 +154,7 @@ server_check() {
                 echo "Resolución de dominio DNS $domain exitosa."
             else
                 echo "No se puede resolver el dominio DNS $domain. Verifica tu conexión y configuración DNS. coylet intentara iniciar en 2 minutos"
-                sleep 2m
+                sleep 5
                 return 1
             fi
         done
@@ -245,8 +247,6 @@ autostart_run() {
 }
 
 update_coylet() {
-    regs_st nocheck
-
     # Definir extensiones a excluir
     extensiones_excluidas=("conf" "txt")
 
@@ -324,7 +324,6 @@ update_coylet() {
         ln -s "$directorio_destino/source/enb/coylet" /usr/sbin
     fi
 
-    regs_st check
     echo "Sistema de archivos ok!"
     sleep 4
 }
@@ -489,6 +488,7 @@ install() {
     echo "Instalando....."
     c_install
     update_coylet
+    server_ok
     autostart_run
 }
 

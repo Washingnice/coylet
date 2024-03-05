@@ -194,6 +194,7 @@ dataload() {
 }
 
 pre_config() {
+    #if [[ ((-e $directorio_destino/config.conf) && (-e $directorio_destino/dns.conf) && (-e $directorio_destino/port_udp.conf) && (-e $directorio_destino/port_tcp.conf) && (-e $directorio_destino/access.txt) && (-e $directorio_destino/listanegra.txt)) ]]; then
     #runchecksts start
     umask 755
     IFS=$'\n'
@@ -344,7 +345,7 @@ restoresiptables() {
             iptables -t nat -F MINAT-POST
             iptables -F MINAT-USER
             iptables -t nat -A NOT-NAT -j MINAT-PRE
-            subfor | iptables-restore -n >/dev/null 2>&1
+            subfor | iptables-restore -n 2>/dev/null
             at_restore &
 
         elif [[ "$1" == "b" ]]; then
@@ -755,41 +756,40 @@ portmaster() {
 
 update_config() {
     c_run
-    if [[ ((-e $directorio_destino/config.conf) && (-e $directorio_destino/dns.conf) && (-e $directorio_destino/port_udp.conf) && (-e $directorio_destino/port_tcp.conf) && (-e $directorio_destino/access.txt) && (-e $directorio_destino/listanegra.txt)) ]]; then
-        if [[ $1 ]]; then
-            date_confignew=$(sha1sum $directorio_destino/config.conf | awk '{print $1}')
-            date_registradosnew=$(sha1sum $directorio_destino/access.txt | awk '{print $1}')
-        fi
-        date_dnsnew=$(sha1sum $directorio_destino/dns.conf | awk '{print $1}')
-        date_port_udpnew=$(sha1sum $directorio_destino/port_udp.conf | awk '{print $1}')
-        date_port_tcpnew=$(sha1sum $directorio_destino/port_tcp.conf | awk '{print $1}')
-
-        date_blacklistnew=$(sha1sum $directorio_destino/listanegra.txt | awk '{print $1}')
-        if [[ "$date_configold" != "$date_confignew" ]]; then
-            date_configold="$date_confignew"
-            data_config
-        fi
-        if [[ (("$date_dnsold" != "$date_dnsnew") && (! $1)) ]]; then
-            date_dnsold="$date_dnsnew"
-            dns_config
-        fi
-        if [[ ((("$date_port_udpold" != "$date_port_udpnew") || ("$date_port_tcpold" != "$date_port_tcpnew")) && (! $1)) ]]; then
-            date_port_udpold="$date_port_udpnew"
-            date_port_tcpold="$date_port_tcpnew"
-            portmaster
-        fi
-        if [[ (("$date_registradosold" != "$date_registradosnew") && ($1)) ]]; then
-            date_registradosold="$date_registradosnew"
-            reg_config
-        fi
-        if [[ (("$date_blacklistold" != "$date_blacklistnew") && (! $1)) ]]; then
-            date_blacklistold="$date_blacklistnew"
-            func_negra
-        fi
-    else
-        echo "falta un archivo .conf o .txt de $directorio_destino/"
-        echo "Coylet finaliza y se libera el firewall!!!!"
-        exit
-
+    if [[ $1 ]]; then
+        date_confignew=$(sha1sum $directorio_destino/config.conf | awk '{print $1}')
+        date_registradosnew=$(sha1sum $directorio_destino/access.txt | awk '{print $1}')
     fi
+    date_dnsnew=$(sha1sum $directorio_destino/dns.conf | awk '{print $1}')
+    date_port_udpnew=$(sha1sum $directorio_destino/port_udp.conf | awk '{print $1}')
+    date_port_tcpnew=$(sha1sum $directorio_destino/port_tcp.conf | awk '{print $1}')
+
+    date_blacklistnew=$(sha1sum $directorio_destino/listanegra.txt | awk '{print $1}')
+    if [[ "$date_configold" != "$date_confignew" ]]; then
+        date_configold="$date_confignew"
+        sleep 0.3
+        data_config
+    fi
+    if [[ (("$date_dnsold" != "$date_dnsnew") && (! $1)) ]]; then
+        date_dnsold="$date_dnsnew"
+        sleep 0.3
+        dns_config
+    fi
+    if [[ ((("$date_port_udpold" != "$date_port_udpnew") || ("$date_port_tcpold" != "$date_port_tcpnew")) && (! $1)) ]]; then
+        date_port_udpold="$date_port_udpnew"
+        date_port_tcpold="$date_port_tcpnew"
+        sleep 0.3
+        portmaster
+    fi
+    if [[ (("$date_registradosold" != "$date_registradosnew") && ($1)) ]]; then
+        date_registradosold="$date_registradosnew"
+        sleep 0.3
+        reg_config
+    fi
+    if [[ (("$date_blacklistold" != "$date_blacklistnew") && (! $1)) ]]; then
+        date_blacklistold="$date_blacklistnew"
+        sleep 0.3
+        func_negra
+    fi
+
 }
