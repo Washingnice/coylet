@@ -92,7 +92,7 @@ server_ok() {
                 echo "$program OK"
             fi
         }
-        server_check
+        
         update_repos
         # Verificar e instalar programas
         check_and_install "sha1sum"
