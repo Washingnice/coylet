@@ -325,7 +325,7 @@ restoresiptables() {
     }
 
     if [[ (("$1" == "n") || (("$1" == "b") && ("$botsdat"))) ]]; then
-        if [[ ("$1" == "n") && (! -f "$directorio_destino/firewall/iptables.back") ]]; then
+        if [[ "$1" == "n" && ! -f "$directorio_destino/firewall/iptables.back" ]]; then
 
             inttmp=("*nat")
             for l in ${natport[*]}; do
