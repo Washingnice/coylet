@@ -210,6 +210,7 @@ pre_config() {
     date_configold=0
     date_dnsold=0
     dataid=a
+    s_pas="true"
     datarst=0
     date_port_udpold=0
     date_port_tcpold=0
@@ -338,14 +339,18 @@ restoresiptables() {
                 inttmp2+=("$l")
             done
             inttmp2+=("COMMIT" "#comentarios")
-            iptables-save >$directorio_destino/firewall/iptables.back 2>/dev/null
+
+            if [[ "$s_pas" == "false" ]]; then
+                iptables-save >$directorio_destino/firewall/iptables.back 2>/dev/null
+                s_pas="true"
+            fi
             iptables -F coyl-user-input
             iptables -t nat -F MINAT-PRE
             iptables -t nat -F NOT-NAT
             iptables -t nat -F MINAT-POST
             iptables -F MINAT-USER
             iptables -t nat -A NOT-NAT -j MINAT-PRE
-            subfor | iptables-restore -n 
+            subfor | iptables-restore -n
             at_restore &
 
         elif [[ "$1" == "b" ]]; then
