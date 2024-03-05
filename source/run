@@ -93,6 +93,7 @@ server_ok() {
             fi
         }
         
+        
         update_repos
         # Verificar e instalar programas
         check_and_install "sha1sum"
