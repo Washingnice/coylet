@@ -318,14 +318,14 @@ restoresiptables() {
     at_restore() {
         sleep 2m
         if [[ -f "$directorio_destino/firewall/iptables.back" ]]; then
-            cat $directorio_destino/firewall/iptables.back | iptables-restore >/dev/null 2>&1
+            cat $directorio_destino/firewall/iptables.back | iptables-restore
             rm -f $directorio_destino/firewall/iptables.back
             echo "Los cambios efectuados en las reglas de rutas fueron revenidos a la version anterior |$(date)|" >>$directorio_destino/log/log.txt
         fi
     }
 
     if [[ (("$1" == "n") || (("$1" == "b") && ("$botsdat"))) ]]; then
-        if [[ "$1" == "n" && ! -f "$directorio_destino/firewall/iptables.back" ]]; then
+        if [[ ("$1" == "n") && (! -f "$directorio_destino/firewall/iptables.back") ]]; then
 
             inttmp=("*nat")
             for l in ${natport[*]}; do
@@ -345,7 +345,7 @@ restoresiptables() {
             iptables -t nat -F MINAT-POST
             iptables -F MINAT-USER
             iptables -t nat -A NOT-NAT -j MINAT-PRE
-            subfor | iptables-restore -n 2>/dev/null
+            subfor | iptables-restore -n 
             at_restore &
 
         elif [[ "$1" == "b" ]]; then
