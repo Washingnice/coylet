@@ -340,9 +340,9 @@ restoresiptables() {
             done
             inttmp2+=("COMMIT" "#comentarios")
 
-            if [[ "$s_pas" == "false" ]]; then
+            if [[ "$s_pas" == "true" ]]; then
                 iptables-save >$directorio_destino/firewall/iptables.back 2>/dev/null
-                s_pas="true"
+                s_pas="false"
             fi
             iptables -F coyl-user-input
             iptables -t nat -F MINAT-PRE
