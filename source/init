@@ -210,7 +210,7 @@ pre_config() {
     date_configold=0
     date_dnsold=0
     dataid=a
-    s_pas="true"
+    export s_pas=false
     datarst=0
     date_port_udpold=0
     date_port_tcpold=0
@@ -323,6 +323,7 @@ restoresiptables() {
             rm -f $directorio_destino/firewall/iptables.back
             echo "Los cambios efectuados en las reglas de rutas fueron revenidos a la version anterior |$(date)|" >>$directorio_destino/log/log.txt
         fi
+        s_pas=true
     }
 
     if [[ (("$1" == "n") || (("$1" == "b") && ("$botsdat"))) ]]; then
@@ -342,7 +343,7 @@ restoresiptables() {
 
             if [[ "$s_pas" == "true" ]]; then
                 iptables-save >$directorio_destino/firewall/iptables.back 2>/dev/null
-                s_pas="false"
+                at_restore &
             fi
             iptables -F coyl-user-input
             iptables -t nat -F MINAT-PRE
@@ -351,7 +352,7 @@ restoresiptables() {
             iptables -F MINAT-USER
             iptables -t nat -A NOT-NAT -j MINAT-PRE
             subfor | iptables-restore -n
-            at_restore &
+            s_pas=false
 
         elif [[ "$1" == "b" ]]; then
             inttmp=("*filter")
