@@ -169,7 +169,7 @@ dataload() {
     unset netip
     unset netcns
     loopbackips32=($(ip a | grep "inet " | awk '{print $2}' | cut -d/ -f1))
-    dvsaddr=$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')
+    local dvsaddr="${masterface:-$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')}"
     srcnothost=$(for I in ${loopbackips32[*]}; do echo "and not src host $I "; done)
     sumvar=0
     IFS=$'\n'
@@ -464,7 +464,7 @@ restw() {
     local I
     loopbackips32=($(ip a | grep "inet " | awk '{print $2}' | cut -d/ -f1))
     loopbackips=($(ip a | grep "inet " | awk '{print $2}'))
-    dvsaddr=$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')
+    local dvsaddr=$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')
     dvsaddrs=($(ip a | grep ": " | awk '{print $2}' | grep -v lo | grep -v @ | cut -d: -f1 | uniq | grep -v $dvsaddr))
     for I in ${loopbackips[*]}; do
         iptables -A loopback -s $I -j ACCEPT -W
@@ -476,7 +476,7 @@ restw() {
 portmaster() {
     unset portrts
     unset natport
-    local dvsaddr=$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')
+    local dvsaddr="${masterface:-$(ip route | awk -F "dev " '{print $2}' | awk 'NR<2{print $1}')}"
     local startport
     local prefijo
     local portdivis
@@ -506,9 +506,11 @@ portmaster() {
                 $port1d2 -gt $port1d1)) && (($port1d1 -gt 1) && ($port1d1 -le 65535) && (
                 $port1d2 -gt 1) && ($port1d2 -le 65535))) ]]; then
                 multipori=" --match multiport --dports $port1d1:$port1d2"
-            fi
-            if [[ (("$port1d1") && ($port1d1 -gt 1) && ($port1d1 -le 65535) && (! $port1d2)) ]]; then
+
+            elif [[ (("$port1d1") && ($port1d1 -gt 1) && ($port1d1 -le 65535) && (! $port1d2)) ]]; then
                 spori="-m $port_type --dport $port1d1"
+            else
+                local autoface=$(ip a | grep "$sourceip" | awk -F "global " '{print $2}')
             fi
             if [[ "$sourceip" ]]; then
                 sourceipi="-s $sourceip"
@@ -517,8 +519,12 @@ portmaster() {
                 destinipi="-d $destinip"
             fi
             if [[ (($destinipi) || ($sourceipi) || ($spori) || ($multipori)) ]]; then
-                portrts+=("-A coyl-user-input -p $port_type $sourceipi $destinipi $spori $multipor -j ACCEPT")
-
+                if [[ (($autoface) && (! $destinipi)) ]]; then
+                    portrts+=("-A MINAT-USER -i $autoface -j ACCEPT")
+                    portrts+=("-A MINAT-USER -o $autoface -j ACCEPT")
+                else
+                    portrts+=("-A coyl-user-input -p $port_type $sourceipi $destinipi $spori $multipor -j ACCEPT")
+                fi
             fi
             rstvarford
         fi
@@ -577,14 +583,14 @@ portmaster() {
             fi
             if [[ ((($destinipi) && ($sourceipi)) || ((
                 $destinipi) && ((($snat) || ($smultipori))))) ]]; then
-                local autoface=($(ip a | grep "$sourceip" | awk -F "global " '{print "! -o", $2}'))
+                local autoface=$(ip a | grep "$sourceip" | awk -F "global " '{print "! -o", $2}')
                 natport+=("-A MINAT-POST -p $port_type $sourceipi $autoface $smultipori $snat -j SNAT --to-source $destinipi")
                 natport+=("-A NOT-NAT $sourceipi -j RETURN")
                 portrts+=("-A coyl-user-input $sourceipi $smultipori $snat -i $dvsaddr -j ACCEPT")
-                if [[ ${autoface[0]} ]]; then
+                if [[ $autoface ]]; then
                     local autoface=($(ip a | grep "$sourceip" | awk -F "global " '{print $2}'))
                     #$dvsaddr
-                    portrts+=("-A MINAT-USER -i ${autoface[0]} -o $dvsaddr  -j ACCEPT")
+                    portrts+=("-A MINAT-USER -i $autoface -o $dvsaddr  -j ACCEPT")
                 fi
             fi
             rstvarford
@@ -611,13 +617,13 @@ portmaster() {
                 pdestinipi="-d $destinip"
             fi
             if [[ ($sourceipi) ]]; then
-                local autoface=($(ip a | grep "$sourceip" | awk -F "global " '{print "! -o", $2}'))
+                local autoface=$(ip a | grep "$sourceip" | awk -F "global " '{print "! -o", $2}')
                 natport+=("-A MINAT-POST $sourceipi $autoface $smultipori $snat -j MASQUERADE")
                 natport+=("-I NOT-NAT $sourceipi -j RETURN")
                 portrts+=("-A coyl-user-input $sourceipi $smultipori $snat -i $dvsaddr -j ACCEPT")
-                if [[ ${autoface[0]} ]]; then
+                if [[ $autoface ]]; then
                     local autoface=($(ip a | grep "$sourceip" | awk -F "global " '{print $2}'))
-                    portrts+=("-A MINAT-USER -i ${autoface[0]} -o $dvsaddr  -j ACCEPT")
+                    portrts+=("-A MINAT-USER -i $autoface -o $dvsaddr  -j ACCEPT")
                 #portrts+=("-A MINAT-USER -i $autoface -o $dvsaddr -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT")
                 fi
             fi
@@ -629,6 +635,8 @@ portmaster() {
         prefijo=FALSE
         portdivis=1
         unset sourceip
+        unset autoface
+        unset autoface2
         unset destinip
         unset port1d1
         unset port1d2
